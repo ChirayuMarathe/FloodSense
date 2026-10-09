@@ -1,25 +1,27 @@
 # 🌊 FloodSense
-### *AI-Powered Hyperlocal Flood Intelligence & Response Platform*
+### *AI-Powered Hyperlocal 3D Flood Intelligence & Emergency Response Platform*
 
 [![Hackathon Track](https://img.shields.io/badge/Hackathon%20Track-Heat%20%26%20Water-blue.svg)](https://www.wemakedevs.org/aws/env)
-[![AWS Powered](https://img.shields.io/badge/Cloud-AWS%20Serverless-orange.svg)](#aws-architecture)
+[![Cloud Architecture](https://img.shields.io/badge/AWS-Serverless%20Architecture-orange.svg)](#-aws-serverless-cloud-architecture)
+[![Frontend Stack](https://img.shields.io/badge/Frontend-Next.js%2014%20•%20CesiumJS%203D-black.svg)](#%EF%B8%8F-technology-stack)
+[![AI Reasoning](https://img.shields.io/badge/AI%20Analyst-Amazon%20Bedrock%20%2F%20Groq%20LLaMA--3.3-7928CA.svg)](#-pillar-4-grounded-ai-flood-analyst--incident-terminal)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 > **Predict. Verify. Respond.**  
-> Moving from reactive flood observation to actionable, hyperlocal flood intelligence.
+> Moving from passive flood alerts to active, hyperlocal 3D digital twins and coordinated emergency response.
 
 ---
 
 ## 📌 Executive Summary
 
-Current flood-monitoring systems routinely state: *"It is raining heavily."*  
-For citizens and disaster response teams, that provides zero actionable insight. The real questions are:
-- **Which specific neighborhoods and roads will submerge?**
-- **At what hour will water levels cross critical thresholds?**
-- **Why is a specific area vulnerable (elevation, drainage failure, accumulated rainfall)?**
-- **What should citizens and municipal responders do right now?**
+Current municipal flood monitoring systems routinely announce generic warnings: *"It is raining heavily in Mumbai."*  
+For citizens, municipal engineers, and disaster response teams, that provides zero actionable insight. The real operational questions are:
+- **Which specific administrative wards and arterial corridors will submerge first?**
+- **At what hour will localized precipitation and runoff overwhelm drainage networks?**
+- **Why is a specific zone failing (low elevation, high topographic wetness, coastal tidal lock, or drainage blockage)?**
+- **What verified evacuation routes and pump deployments should be mobilized right now?**
 
-**FloodSense** is an end-to-end hyperlocal flood intelligence and emergency response platform built on **AWS Serverless infrastructure**. It combines real-time weather telemetry, topography, historical flood incident memory, and live citizen ground-truth reports to produce explainable risk indices, automated early-warning alerts, verified incident clustering, and grounded AI incident response recommendations.
+**FloodSense** is an enterprise-grade, full-stack 3D flood intelligence and tactical response platform built on **AWS Serverless infrastructure** and **CesiumJS 3D WebGL**. It ingests real-time telemetry, 20 years of historical monsoon memory (1990–2024), high-resolution topography, and live citizen ground-truth reports to produce explainable risk indices, volumetric 3D inundation models, automated early warnings, and grounded AI incident response protocols.
 
 ---
 
@@ -28,11 +30,10 @@ For citizens and disaster response teams, that provides zero actionable insight.
 | Field | Detail |
 | :--- | :--- |
 | **Event** | AWS Environmental Hacks (WeMakeDevs) |
-| **Track** | **Heat & Water** (Floods & Monsoon Waterlogging) |
-| **Hackathon Dates** | October 8 – October 11, 2026 |
-| **Build Category** | Web Application + AWS Serverless Cloud Backend |
-| **Primary Audience** | Citizens, Municipal Authorities, Emergency Responders |
-| **Core Differentiator** | **Predict + Verify + Respond** (Explainable numerical risk engine + crowd-sourced incident ground truth + grounded AI analyst) |
+| **Track** | **Heat & Water** (Urban Flooding & Monsoon Hydrology) |
+| **Target Pilot City** | **Mumbai Metropolitan Region** (24 BMC Administrative Wards) |
+| **Cloud Provider** | **Amazon Web Services (AWS)** — 100% Serverless & IaC via Terraform |
+| **Core Differentiator** | **Predict + Verify + Respond** (Volumetric 3D digital twin + explainable physics engine + S3/DynamoDB citizen verification + grounded Bedrock AI analyst) |
 
 ---
 
@@ -40,141 +41,215 @@ For citizens and disaster response teams, that provides zero actionable insight.
 
 ```mermaid
 flowchart TD
-    subgraph Client ["Frontend Client (React + Vite + Tailwind CSS)"]
-        UI[Flood Command Center]
-        Map[Interactive Mapbox / Leaflet Map]
-        ReportForm[Citizen Flooding Reporter]
-        AIAnalystUI[Grounded AI Flood Analyst]
+    subgraph Client ["Frontend Client (Next.js 14 App Router + CesiumJS 3D WebGL)"]
+        UI[Mission Command Center & Dashboard]
+        Map3D[3D Cesium Digital Twin & Volumetric Risk Columns]
+        ReportForm[Citizen Ground-Truth Ingestion Modal]
+        RAGTerminal[Grounded EOC AI Analyst Terminal]
     end
 
-    subgraph AWS ["AWS Serverless Cloud Infrastructure"]
-        APIGW[Amazon API Gateway REST APIs]
-        LambdaRisk[AWS Lambda: Risk Engine & Forecasting]
-        LambdaReport[AWS Lambda: Report Processor & Clustering]
-        LambdaAlert[AWS Lambda: Threshold & SNS Dispatcher]
+    subgraph AWS ["AWS Serverless Cloud Infrastructure (Terraform Managed)"]
+        APIGW[Amazon API Gateway REST Proxy]
+        LambdaRisk[AWS Lambda: Risk Engine & Telemetry]
+        LambdaIncidents[AWS Lambda: Incident Registry & Triage]
+        LambdaReports[AWS Lambda: Citizen Report Processor]
+        LambdaAI[AWS Lambda: Bedrock / AI Analyst]
+
+        S3Media[Amazon S3: Citizen Evidence Media Bucket]
+        DDBIncidents[(Amazon DynamoDB: Incidents Table)]
+        DDBReports[(Amazon DynamoDB: Citizen Reports Table)]
+        DDBRisk[(Amazon DynamoDB: Ward Risk Telemetry)]
         
-        EB[Amazon EventBridge: 15-min Telemetry Cron]
-        S3[Amazon S3: Telemetry, GeoJSON & Citizen Images]
-        DDB[(Amazon DynamoDB: Zones, Risk, Alerts, Reports)]
-        OpenSearch[(Amazon OpenSearch Service: Incident Search)]
-        SNS[Amazon SNS: Critical Multi-channel Alerts]
+        SNS[Amazon SNS: Critical Emergency Dispatch]
         CW[Amazon CloudWatch: Observability & Health]
-        
-        Bedrock[Amazon Bedrock / LLM: Grounded Explanations]
+        Bedrock[Amazon Bedrock: Claude 3.5 Haiku / AI Agent]
     end
 
-    UI -->|REST Requests| APIGW
-    ReportForm -->|Upload Media| S3
-    ReportForm -->|Submit Report| APIGW
-    
+    UI -->|Telemetry Queries| APIGW
+    Map3D -->|Dynamic Profiles| APIGW
+    ReportForm -->|Direct Photo Upload| S3Media
+    ReportForm -->|Submit Ingestion Payload| APIGW
+    RAGTerminal -->|Inference Queries| APIGW
+
     APIGW --> LambdaRisk
-    APIGW --> LambdaReport
-    
-    EB -->|Trigger Pipeline| LambdaRisk
-    LambdaRisk -->|Fetch Datasets| S3
-    LambdaRisk -->|Persist Scores| DDB
-    LambdaRisk -->|Check Thresholds| LambdaAlert
-    LambdaAlert --> SNS
-    
-    LambdaReport --> DDB
-    LambdaReport --> OpenSearch
-    
-    APIGW --> Bedrock
-    Bedrock -.->|Grounded with Risk Data| DDB
-    
+    APIGW --> LambdaIncidents
+    APIGW --> LambdaReports
+    APIGW --> LambdaAI
+
+    LambdaRisk --> DDBRisk
+    LambdaIncidents --> DDBIncidents
+    LambdaReports --> DDBReports
+    LambdaReports --> SNS
+    LambdaAI --> Bedrock
+    LambdaAI -.->|Grounding Context| DDBRisk
+
     LambdaRisk -.-> CW
-    LambdaReport -.-> CW
+    LambdaReports -.-> CW
 ```
 
 ---
 
-## 🚀 Key Features
+## 🚀 Core Platform Pillars
 
-1. **Hyperlocal Flood Risk Map (0–100 Risk Index):** Color-coded zone polygons (🟢 Low, 🟡 Moderate, 🟠 High, 🔴 Critical) calibrated to local elevation, drainage capacity, and rainfall accumulation.
-2. **Transparent, Explainable Risk Engine:** Clear breakdown of exactly why a zone is flagged (e.g., *Rainfall 31.5 pts + Accumulation 21.25 pts + Low Elevation 11.25 pts*). No black-box guesses.
-3. **Hyperlocal Forecast Horizon:** Predictive 3-hour window graph projecting future water accumulation and flood risk trends before critical points are reached.
-4. **Actionable Smart Alerts:** Severity-tiered emergency notifications containing specific localized risk drivers, affected transit corridors, and preventative actions.
-5. **Citizen Ground-Truth Reports:** Lightweight mobile-first reporting interface enabling citizens to submit real-time water levels (Road Wet, Ankle, Knee, Waist, Severe), descriptions, and geo-tagged images.
-6. **Prediction vs. Reality Incident Verification:** Real-time feedback loop comparing mathematical model predictions against submitted citizen reports, confirming incidents and updating model confidence.
-7. **Municipal Emergency Response Command Center:** Triage dashboard displaying active incidents, affected corridors, response priority rankings, and deployment checklists.
-8. **Grounded AI Flood Analyst:** Natural-language intelligence assistant that generates plain-English briefings and tactical responder action steps strictly based on verified system telemetry.
+### 🌐 Pillar 1: Volumetric 3D Geospatial Digital Twin (CesiumJS)
+- **Real-World Elevation & Terrain:** Accurately models Mumbai's coastal and lowland topography via high-resolution ellipsoid terrain streaming.
+- **Volumetric 3D Risk Extrusion:** Replaces flat 2D map washes with physical **3D extruded risk columns (up to 480m)**. Wards under critical flood inundation rise into prominent, luminescent titanium-frosted 3D glass pillars whose heights scale dynamically with 3-day precipitation accumulation.
+- **Tactical 3D HUD Micro-Pills:** Floating telemetry cards anchored directly to the 3D rooftop of each column, showing rainfall, hazard type, and time-to-surge countdown without visual clutter.
+- **Isometric & Top-Down Camera Toggle:** Instant switching between an isometric 38° tilt perspective and a top-down operational view.
+- **High-Performance Architecture:** Concurrency-throttled Web Workers, base-layer pre-fetching, and offline PWA cache suppression deliver sub-4s instant page loads.
+
+### 🧮 Pillar 2: Explainable Physics & Hydrologic Intelligence Engine
+- **Multi-Factor Physics Modeling:** Evaluates 3-day cumulative rainfall, Topographic Wetness Index (TWI), elevation, soil moisture saturation, and land surface temperature (LST).
+- **Transparent Risk Attribution:** Every ward risk score (0–100 and Severity Levels 0–3) provides a transparent percentage breakdown (e.g., *Rainfall Overflow 38% + Low Elevation Pooling 32% + Tidal Lock 18%*), eliminating opaque black-box AI decisions.
+- **20-Year Climate Memory:** Benchmarks real-time conditions against historical Mumbai catastrophes (July 26, 2005 Deluge, August 29, 2017 Storm, July 2, 2019 Overflow, July 18, 2021 Surge).
+
+### 📱 Pillar 3: Citizen Ground-Truth Verification Pipeline
+- **Crowdsourced Sensor Network:** Mobile-responsive interface allowing citizens to submit real-time water levels (*Road Wet, Ankle Deep, Knee Deep, Waist Deep, Severe Submersion*).
+- **AWS S3 Photo Ingestion:** Direct multipart photo evidence upload to Amazon S3 media buckets.
+- **Prediction vs. Reality Validation Loop:** Automatically correlates mathematical flood models against geolocated citizen field reports to verify incidents and adjust confidence scores in real time.
+
+### 🤖 Pillar 4: Grounded AI Flood Analyst & Incident Terminal
+- **EOC Tactical Protocols:** Integrated terminal powered by Amazon Bedrock (Claude 3.5 Haiku) and Groq LLaMA-3.3 that synthesizes telemetry into municipal incident action plans.
+- **Strict Grounding Guardrails:** System prompts force the AI to reason solely over verified DynamoDB ward statistics and climate data, preventing catastrophic hallucinations during crisis management.
+- **Automated SNS Emergency Dispatch:** Fires automated incident alerts across multi-channel SMS and email topics when critical thresholds are breached.
 
 ---
 
-## 📂 Documentation Directory
+## 🎨 Design System: Frosted Obsidian & Titanium
 
-| Document | Description |
+FloodSense features a purpose-built, high-contrast dark theme inspired by industrial command centers and tactical defense interfaces (Linear / Palantir aesthetic):
+
+- **Background:** Deep Pitch Black / Obsidian (`#0B0D12` and `#000000`).
+- **Typography:** `Clash Grotesk` (display headings), `Satoshi` (tactical body copy), and `JetBrains Mono` (telemetry, coordinates, and codes).
+- **Severity Hierarchy:**
+  - **Level 3 (Critical):** Pure Titanium White (`#FFFFFF`) with solid white pills, glowing outlines, and high-visibility badges.
+  - **Level 2 (Elevated):** Light Zinc (`#D4D4D8` / `zinc-300`).
+  - **Level 1 (Watch):** Slate Grey (`#71717A` / `zinc-500`).
+  - **Level 0 (Nominal):** Graphite (`#27272A` / `zinc-800`).
+
+---
+
+## 🖥️ Platform Walkthrough
+
+| Route | Interface | Key Capabilities |
+| :--- | :--- | :--- |
+| **`/`** | **Landing Page** | Project mission, interactive wave canvas, live telemetry preview, and quick launch pad. |
+| **`/map`** | **3D Geospatial Twin** | Interactive CesiumJS 3D globe, volumetric extruded risk prisms, simulation scrubber, 3D tilt toggle, and floating HUD micro-pills. |
+| **`/dashboard`** | **Mission Telemetry** | Monitored ward metrics, high-contrast severity charts, sorting vulnerability tables, and real-time AWS synchronization indicators. |
+| **`/alerts`** | **Alert Command Center** | Threat spectrum ribbon, proportional severity distribution bar, filtered ward status dossiers, and chronological event timelines. |
+| **`/reports`** | **Analytical Reports** | Deep-dive ward risk profiles, historical disaster match cards, drainage capacity assessments, and evacuation routes. |
+
+---
+
+## ☁️ AWS Serverless Cloud Architecture
+
+The cloud backend is deployed with **Terraform** in `ap-south-1` (Mumbai):
+
+```
+terraform/
+├── apigateway.tf       # API Gateway REST API with CORS & Lambda proxy integrations
+├── lambda.tf           # AWS Lambda functions (Python 3.12 runtime)
+├── dynamodb.tf         # DynamoDB tables (incidents, citizen_reports, risk_cache)
+├── s3.tf               # S3 media bucket with public-read policy for report photos
+├── sns.tf              # Emergency alert SNS topic for broadcast dispatches
+├── iam.tf              # Least-privilege IAM execution roles and policies
+├── main.tf             # AWS provider configuration
+└── outputs.tf          # API Gateway endpoints and resource ARNs
+```
+
+### Deployed Endpoints
+- `GET  /api/risk-score` — Ward-by-ward hydrologic risk assessment.
+- `GET  /api/incidents` — Active verified flood incidents and status.
+- `POST /api/citizen-reports` — Citizen ground-truth reports with S3 media URLs.
+- `POST /api/ai-analyst` — Grounded natural-language EOC briefing generation.
+
+---
+
+## 🛠️ Technology Stack
+
+| Layer | Technologies |
 | :--- | :--- |
-| [**Architecture & AWS Services**](file:///docs/architecture.md) | Full architectural breakdown, AWS services usage, data flow diagrams, and serverless patterns. |
-| [**AWS Backend Deep-Dive**](file:///docs/aws_backend_architecture.md) | AWS serverless execution layer, Lambda microservices, DynamoDB, S3, and EventBridge deep-dive. |
-| [**Frontend + AWS Integration**](file:///docs/frontend_integration_report.md) | How the cloned Next.js repo (`Flood_Monitoring_V1`) was enhanced with S3 photo uploads, Bedrock, and DynamoDB. |
-| [**AWS Quick Deployment Guide**](file:///docs/aws_deployment_guide.md) | 5-minute deployment guide using AWS SAM / CloudFormation, seeding scripts, and smoke test commands. |
-| [**V1 Evolution & Strategy**](file:///docs/v1_evolution_and_hackathon_strategy.md) | Comparative analysis of existing `flood-monitoring-v1`, feature gap analysis, and compliant transition strategy. |
-| [**Risk Engine Methodology**](file:///docs/risk_engine_methodology.md) | Detailed mathematical formula, weighting criteria, normalization algorithms, and ML augmentation path. |
-| [**API Specification**](file:///docs/api_specification.md) | Complete OpenAPI/REST endpoint specifications, schemas, payloads, and mock responses. |
-| [**Database Schemas**](file:///docs/database_schemas.md) | DynamoDB single-table/multi-table designs, Partition Keys, Sort Keys, S3 bucket layout, and OpenSearch mappings. |
-| [**AI Flood Analyst Specification**](file:///docs/ai_flood_analyst.md) | AI agent grounding guidelines, anti-hallucination guardrails, system prompts, and structured output schemas. |
-| [**Citizen Verification Pipeline**](file:///docs/citizen_verification_pipeline.md) | Geospatial clustering, incident verification loop, report deduplication, and photo processing flow. |
-| [**4-Day Hackathon Roadmap**](file:///docs/four_day_execution_plan.md) | Tactical step-by-step development schedule for Oct 8–11, milestone gates, and risk contingencies. |
-| [**UI/UX Command Center Spec**](file:///docs/ui_ux_command_center_spec.md) | Dark-mode design system, color tokens, layout hierarchy, and micro-interaction specifications. |
-| [**3-Minute Demo Video Script & Storyboard**](file:///docs/demo_video_master_plan.md) | Word-for-word voiceover script, second-by-second storyboard, tab-switching cues, and AWS Console walkthrough checklist. |
-| [**Official Submission Writeup**](file:///docs/submission_writeup.md) | Formatted submission text for WeMakeDevs Devpost portal adhering to all competition judging criteria. |
+| **Frontend Framework** | Next.js 14 (App Router), React 19, TypeScript |
+| **3D Geospatial Engine** | CesiumJS, WebGL, 3D OSM Building Meshes, Esri World Imagery |
+| **Styling & Animation** | Tailwind CSS, Framer Motion, Lucide Icons |
+| **State Management** | Zustand (persistent simulation timeline & active city state) |
+| **Cloud Infrastructure** | AWS Lambda, Amazon API Gateway, Amazon DynamoDB, Amazon S3, Amazon SNS |
+| **Infrastructure as Code** | HashiCorp Terraform |
+| **AI / LLM Integration** | Amazon Bedrock (Claude 3.5 Haiku), Groq SDK (LLaMA-3.3 70B Versatile) |
 
 ---
 
-## 🛠️ Tech Stack
+## 🚀 Quickstart & Local Setup
 
-- **Frontend:** React 19, Vite, Tailwind CSS, Lucide Icons, Recharts, Mapbox GL / Leaflet
-- **Cloud Backend:** AWS Lambda (Python 3.12 / FastAPI runtime), Amazon API Gateway
-- **Persistence & Search:** Amazon DynamoDB, Amazon S3, Amazon OpenSearch Service
-- **Orchestration & Messaging:** Amazon EventBridge (Scheduler), Amazon SNS
-- **AI / LLM Layer:** Amazon Bedrock (Anthropic Claude 3.5 Sonnet / Haiku) or Strands Agent framework
-- **Telemetry & Monitoring:** Amazon CloudWatch Metrics & Logs
+### 1. Prerequisites
+- **Node.js** (v18.17+ or v20+)
+- **npm** or **bun**
+- **Terraform** (v1.5+ optional, for cloud deployment)
+- **Cesium Ion Token** (free account at [ion.cesium.com](https://ion.cesium.com))
+
+### 2. Frontend Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/ChirayuMarathe/FloodSense.git
+cd FloodSense/frontend_repo
+
+# Install dependencies
+npm install
+
+# Configure environment variables
+cp .env.example .env.local
+```
+
+Add your Cesium Ion token in `.env.local`:
+```env
+NEXT_PUBLIC_CESIUM_TOKEN="your_cesium_token_here"
+NEXT_PUBLIC_FLOODSENSE_API_URL="https://jd8e1lou1k.execute-api.ap-south-1.amazonaws.com"
+GROQ_API_KEY="your_groq_api_key_optional"
+```
+
+Start the local development server:
+```bash
+npm run dev
+```
+Open **`http://localhost:3000`** in your browser.
+
+### 3. Deploying AWS Infrastructure (Optional)
+
+```bash
+cd terraform
+terraform init
+terraform apply -auto-approve
+```
 
 ---
 
-## 🧭 Repository Structure
+## 📂 Repository Layout
 
 ```
-floodsense/
-├── frontend/                  # React + Vite web application
+FloodSense/
+├── frontend_repo/             # Next.js 14 + CesiumJS 3D Web Application
 │   ├── src/
-│   │   ├── components/        # Cards, navigation, alert banners, metric graphs
-│   │   ├── pages/             # Command Center, Map, Alerts, Incidents, Reports, AI
-│   │   ├── hooks/             # Custom React state & telemetry query hooks
-│   │   ├── services/          # API Gateway client integration
-│   │   └── utils/             # Color tokens, formatters, geospatial helpers
-│   └── package.json
-├── backend/                   # Python microservices / Lambda handlers
-│   ├── api/                   # FastAPI route definitions & schemas
-│   ├── risk_engine/           # Deterministic risk engine algorithms
-│   ├── services/              # DynamoDB, S3, OpenSearch, SNS connectors
-│   ├── ai/                    # Bedrock grounding client & structured prompt runners
-│   └── requirements.txt
-├── infrastructure/            # Infrastructure as Code (AWS SAM / CDK / Terraform)
-│   ├── dynamodb/              # Table definitions & secondary indexes
-│   ├── lambda/                # Function packaging & IAM role policies
-│   ├── apigateway/            # OpenAPI route specifications
-│   └── eventbridge/           # Cron trigger schedules
-├── data/                      # Synthetic baseline datasets & geo schemas
-│   ├── sample_zones.geojson   # Pilot geographic ward polygons
-│   └── historical_floods.json # Baseline incident logs
-├── docs/                      # Comprehensive technical & submission specs
-│   ├── architecture.md
-│   ├── risk_engine_methodology.md
-│   ├── api_specification.md
-│   ├── database_schemas.md
-│   ├── ai_flood_analyst.md
-│   ├── citizen_verification_pipeline.md
-│   ├── four_day_execution_plan.md
-│   ├── demo_video_script.md
-│   └── submission_writeup.md
-├── README.md
-└── LICENSE
+│   │   ├── app/               # Next.js App Router (map, dashboard, alerts, reports)
+│   │   ├── components/        # 3D Cesium views, HUD tags, stat cards, modals
+│   │   ├── lib/               # Risk engine, GIS geometry layers, AWS client
+│   │   └── store/             # Zustand simulation timeline store
+│   └── public/                # Cesium Web Workers, GIS GeoJSON datasets
+├── backend/                   # AWS Lambda serverless microservices
+│   ├── lambdas/
+│   │   ├── risk_engine/       # Hydrologic telemetry & risk calculations
+│   │   ├── citizen_reports/   # Citizen evidence ingestion
+│   │   ├── incidents/         # Municipal incident registry
+│   │   └── ai_analyst/        # Grounded Bedrock / LLM analyst
+│   └── scripts/               # DynamoDB database seed scripts
+├── terraform/                 # Infrastructure as Code (AWS Serverless)
+├── docs/                      # Architectural specs & technical deep-dives
+├── README.md                  # Master Project Readme
+└── LICENSE                    # Open-source MIT License
 ```
 
 ---
 
 ## ⚖️ Hackathon Compliance Notice
 
-*This repository represents genuine, clean-slate work created specifically for the October 8–11, 2026 WeMakeDevs AWS Environmental Hacks event. All commit histories, AWS resources, and code artifacts correspond directly to the official hackathon development window.*
+*This repository represents original, clean-slate work created specifically for the October 8–11, 2026 WeMakeDevs AWS Environmental Hacks event. All commit histories, AWS resources, and code artifacts correspond directly to the official hackathon development window.*

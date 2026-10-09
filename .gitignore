@@ -1,5 +1,14 @@
-# Frontend directories (managed separately)
-frontend_repo/
+# Frontend build & environment artifacts
+frontend_repo/node_modules/
+frontend_repo/.next/
+frontend_repo/out/
+frontend_repo/build/
+frontend_repo/.env.local
+frontend_repo/.env*.local
+frontend_repo/data/
+frontend_repo/*.tsbuildinfo
+frontend_repo/server.log
+frontend_repo/.git_v1_backup/
 frontend_adapter/
 
 # Terraform state and binary files

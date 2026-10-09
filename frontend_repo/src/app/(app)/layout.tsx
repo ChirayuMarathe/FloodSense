@@ -1,0 +1,62 @@
+'use client';
+
+import AppSidebar from '@/components/flood-dashboard/AppSidebar';
+import CommandBar from '@/components/flood-dashboard/CommandBar';
+import CitizenReportModal from '@/components/flood-dashboard/CitizenReportModal';
+import { WaveCanvas } from '@/components/landing/WaveCanvas';
+import { useFloodStore } from '@/store/flood-store';
+import { useEffect, useState } from 'react';
+import { Droplets } from 'lucide-react';
+
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const updateSeverities = useFloodStore((s) => s.updateSeverities);
+  const initRiskData = useFloodStore((s) => s.initRiskData);
+  const riskDataLoaded = useFloodStore((s) => s.riskDataLoaded);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+
+  useEffect(() => {
+    updateSeverities();
+    if (!riskDataLoaded) initRiskData();
+  }, [updateSeverities, initRiskData, riskDataLoaded]);
+
+  return (
+    <div className="w-screen h-screen bg-black text-white font-satoshi flex overflow-hidden relative">
+      {/* Background Wave Canvas Animation */}
+      <WaveCanvas />
+
+      {/* Re-instated AppSidebar with ChainFund styling */}
+      <AppSidebar />
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
+        <header className="flex items-center justify-between gap-4 px-6 py-3 flex-shrink-0 bg-black/80 backdrop-blur-xl border-b border-white/10">
+          <CommandBar />
+          <div className="flex items-center gap-3 text-xs font-mono text-gray-400">
+            {/* Citizen Report Trigger Button */}
+            <button
+              onClick={() => setReportModalOpen(true)}
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-400 hover:bg-blue-500/25 transition-all text-xs font-sans font-medium"
+            >
+              <Droplets size={13} className="text-blue-400 animate-pulse" />
+              <span>Report Flooding</span>
+            </button>
+
+            <span className="hidden md:inline-block px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-[10px] tracking-wider">
+              LAT: 19.0760° N | LON: 72.8777° E
+            </span>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-hidden relative z-10 bg-transparent">
+          {children}
+        </main>
+      </div>
+
+      {/* Ground-Truth Citizen Report Modal with S3 & DynamoDB Ingestion */}
+      <CitizenReportModal
+        isOpen={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+      />
+    </div>
+  );
+}

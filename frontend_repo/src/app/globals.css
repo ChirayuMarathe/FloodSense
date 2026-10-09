@@ -1,0 +1,207 @@
+
+@import url("https://api.fontshare.com/v2/css?f[]=clash-grotesk@400,500,600,700&f[]=satoshi@400,500,700,900&display=swap");
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "cesium/Build/Cesium/Widgets/widgets.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.5rem;
+  --background: #0B0D12;
+  --foreground: #E1E4EA;
+  --card: #13161D;
+  --card-foreground: #E1E4EA;
+  --popover: #13161D;
+  --popover-foreground: #E1E4EA;
+  --primary: #5B8DEF;
+  --primary-foreground: #0B0D12;
+  --secondary: #1A1E27;
+  --secondary-foreground: #E1E4EA;
+  --muted: #1A1E27;
+  --muted-foreground: #8B919E;
+  --accent: #5B8DEF;
+  --accent-foreground: #0B0D12;
+  --destructive: #D94444;
+  --border: #242832;
+  --input: #242832;
+  --ring: #5B8DEF;
+  --chart-1: #5B8DEF;
+  --chart-2: #8B919E;
+  --chart-3: #4A6FA5;
+  --chart-4: #D94444;
+  --chart-5: #7C8594;
+  --sidebar: #0F1117;
+  --sidebar-foreground: #E1E4EA;
+  --sidebar-primary: #5B8DEF;
+  --sidebar-primary-foreground: #0B0D12;
+  --sidebar-accent: #1A1E27;
+  --sidebar-accent-foreground: #E1E4EA;
+  --sidebar-border: #242832;
+  --sidebar-ring: #5B8DEF;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  html, body, #__next {
+    width: 100%;
+  }
+}
+
+/* Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #242832;
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #343A47;
+}
+
+/* MapLibre controls */
+.maplibregl-ctrl-bottom-left,
+.maplibregl-ctrl-bottom-right {
+  bottom: 80px !important;
+}
+.maplibregl-ctrl-group {
+  background: #13161D !important;
+  border: 1px solid #242832 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+}
+.maplibregl-ctrl-group button {
+  filter: invert(1) brightness(0.5);
+  width: 32px !important;
+  height: 32px !important;
+}
+.maplibregl-ctrl-group button + button {
+  border-top-color: #242832 !important;
+}
+.maplibregl-ctrl-scale {
+  background: #13161D !important;
+  border: 1px solid #242832 !important;
+  border-radius: 4px !important;
+  color: #8B919E !important;
+  font-size: 10px !important;
+}
+.maplibregl-popup-content {
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+.maplibregl-popup-tip {
+  display: none !important;
+}
+.maplibregl-popup-close-button {
+  display: none !important;
+}
+
+/* Range input */
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #5B8DEF;
+  cursor: pointer;
+  border: 2px solid #242832;
+}
+input[type=range]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #5B8DEF;
+  cursor: pointer;
+  border: 2px solid #242832;
+}
+
+/* ── Cesium viewer overrides ── */
+.cesium-viewer {
+  font-family: inherit;
+}
+.cesium-viewer-toolbar,
+.cesium-viewer-animationContainer,
+.cesium-viewer-timelineContainer,
+.cesium-viewer-bottom,
+.cesium-viewer-fullscreenContainer,
+.cesium-viewer-vrContainer,
+.cesium-viewer-geocoderContainer,
+.cesium-viewer-selectionIndicatorContainer,
+.cesium-viewer-infoBoxContainer,
+.cesium-navigationHelpButton-wrapper,
+.cesium-baseLayerPicker-dropDown,
+.cesium-sceneModePicker-wrapper {
+  display: none !important;
+}
+.cesium-widget-credits {
+  background: transparent !important;
+  font-size: 9px !important;
+  opacity: 0.3;
+  pointer-events: none;
+}
+.cesium-credit-logoContainer {
+  display: none !important;
+}
+.cesium-credit-textContainer {
+  color: #525866 !important;
+}
+.cesium-widget canvas {
+  outline: none;
+}
