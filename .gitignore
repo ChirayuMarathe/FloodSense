@@ -1,0 +1,30 @@
+# Frontend directories (managed separately)
+frontend_repo/
+frontend_adapter/
+
+# Terraform state and binary files
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/.terraform.lock.hcl
+
+# Environment & Secrets
+.env
+.env.*
+*.env
+*.pem
+*.key
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
