@@ -188,3 +188,67 @@ export async function dispatchAwsIncidentAction(incidentId: string, actionType: 
     return null;
   }
 }
+
+export interface AwsZoneRecord {
+  zone_id: string;
+  name: string;
+  district: string;
+  latitude: number;
+  longitude: number;
+  current_risk: number;
+  severity: 'LOW' | 'MODERATE' | 'HIGH' | 'CRITICAL';
+  rainfall_rate_mm: number;
+  elevation_meters: number;
+  active_citizen_reports: number;
+  active_pumps: number;
+  status: string;
+}
+
+/**
+ * Fetch all zones telemetry from DynamoDB
+ */
+export async function fetchAwsZones(): Promise<AwsZoneRecord[]> {
+  if (!AWS_API_BASE) return [];
+  try {
+    const res = await fetch(`${AWS_API_BASE}/api/zones`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (err) {
+    console.warn('[AWS Integration] Could not fetch zones:', err);
+    return [];
+  }
+}
+
+/**
+ * Fetch citizen reports from DynamoDB
+ */
+export async function fetchAwsCitizenReports() {
+  if (!AWS_API_BASE) return [];
+  try {
+    const res = await fetch(`${AWS_API_BASE}/api/reports`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (err) {
+    console.warn('[AWS Integration] Could not fetch citizen reports:', err);
+    return [];
+  }
+}
+
+/**
+ * Request AI analysis from AWS Bedrock / Lambda
+ */
+export async function fetchAwsAiAnalysis(zoneId: string, query?: string) {
+  if (!AWS_API_BASE) return null;
+  try {
+    const res = await fetch(`${AWS_API_BASE}/api/ai/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ zone_id: zoneId, query: query || 'Analyze current risk and recommend actions.' })
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.warn('[AWS Integration] AI analyze call failed:', err);
+    return null;
+  }
+}

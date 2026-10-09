@@ -56,6 +56,18 @@ resource "aws_apigatewayv2_route" "risk_proxy" {
   target    = "integrations/${aws_apigatewayv2_integration.risk_engine.id}"
 }
 
+resource "aws_apigatewayv2_route" "zones" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "ANY /api/zones"
+  target    = "integrations/${aws_apigatewayv2_integration.risk_engine.id}"
+}
+
+resource "aws_apigatewayv2_route" "alerts" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "ANY /api/alerts"
+  target    = "integrations/${aws_apigatewayv2_integration.risk_engine.id}"
+}
+
 # --- 2. Citizen Reports Integration ---
 resource "aws_apigatewayv2_integration" "citizen_reports" {
   api_id                 = aws_apigatewayv2_api.http_api.id
