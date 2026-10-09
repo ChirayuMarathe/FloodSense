@@ -164,8 +164,8 @@ def lambda_handler(event, context):
         return {"statusCode": 200, "body": json.dumps({"status": "Batch recalculation completed"})}
 
     # 2. API Gateway HTTP Request Handling
-    path = event.get('path', '')
-    method = event.get('httpMethod', 'GET')
+    path = event.get('rawPath') or event.get('path', '')
+    method = event.get('httpMethod') or event.get('requestContext', {}).get('http', {}).get('method', 'GET')
     path_params = event.get('pathParameters') or {}
 
     headers = {

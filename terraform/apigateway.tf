@@ -41,7 +41,7 @@ resource "aws_apigatewayv2_integration" "risk_engine" {
   api_id                 = aws_apigatewayv2_api.http_api.id
   integration_type       = "AWS_PROXY"
   integration_uri        = aws_lambda_function.risk_engine.invoke_arn
-  payload_format_version = "2.0"
+  payload_format_version = "1.0"
 }
 
 resource "aws_apigatewayv2_route" "dashboard" {
@@ -61,7 +61,7 @@ resource "aws_apigatewayv2_integration" "citizen_reports" {
   api_id                 = aws_apigatewayv2_api.http_api.id
   integration_type       = "AWS_PROXY"
   integration_uri        = aws_lambda_function.citizen_reports.invoke_arn
-  payload_format_version = "2.0"
+  payload_format_version = "1.0"
 }
 
 resource "aws_apigatewayv2_route" "reports" {
@@ -81,7 +81,7 @@ resource "aws_apigatewayv2_integration" "incidents" {
   api_id                 = aws_apigatewayv2_api.http_api.id
   integration_type       = "AWS_PROXY"
   integration_uri        = aws_lambda_function.incidents.invoke_arn
-  payload_format_version = "2.0"
+  payload_format_version = "1.0"
 }
 
 resource "aws_apigatewayv2_route" "incidents" {
@@ -101,7 +101,7 @@ resource "aws_apigatewayv2_integration" "ai_analyst" {
   api_id                 = aws_apigatewayv2_api.http_api.id
   integration_type       = "AWS_PROXY"
   integration_uri        = aws_lambda_function.ai_analyst.invoke_arn
-  payload_format_version = "2.0"
+  payload_format_version = "1.0"
 }
 
 resource "aws_apigatewayv2_route" "ai_analyze" {

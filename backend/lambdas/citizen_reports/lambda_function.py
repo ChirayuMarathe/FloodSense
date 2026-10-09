@@ -86,8 +86,8 @@ def cluster_and_verify_incident(zone_id, lat, lon, water_level, report_id):
     return incident_id, status
 
 def lambda_handler(event, context):
-    path = event.get('path', '')
-    method = event.get('httpMethod', 'GET')
+    path = event.get('rawPath') or event.get('path', '')
+    method = event.get('httpMethod') or event.get('requestContext', {}).get('http', {}).get('method', 'GET')
     headers = {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",

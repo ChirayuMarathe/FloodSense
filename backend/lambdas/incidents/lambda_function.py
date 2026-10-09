@@ -15,8 +15,8 @@ class DecimalEncoder(json.JSONEncoder):
         return super(DecimalEncoder, self).default(obj)
 
 def lambda_handler(event, context):
-    path = event.get('path', '')
-    method = event.get('httpMethod', 'GET')
+    path = event.get('rawPath') or event.get('path', '')
+    method = event.get('httpMethod') or event.get('requestContext', {}).get('http', {}).get('method', 'GET')
     path_params = event.get('pathParameters') or {}
     
     headers = {
