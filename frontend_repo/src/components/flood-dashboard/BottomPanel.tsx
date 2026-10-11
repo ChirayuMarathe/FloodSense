@@ -159,73 +159,36 @@ export default function BottomPanel({ mode = 'floating' }: BottomPanelProps) {
       <div className="flex flex-col gap-2 p-3.5 rounded-2xl bg-black/95 backdrop-blur-2xl border border-white/15 shadow-[0_24px_64px_rgba(0,0,0,0.95),inset_0_1px_1px_rgba(255,255,255,0.06)] font-satoshi">
         
         {/* ROW 1: Year & Month Selectors + Historical Fast Jumps */}
-        <div className="flex items-center justify-between gap-2.5 text-xs pb-2 border-b border-white/10 overflow-hidden">
+        <div className="flex items-center justify-between gap-2.5 text-xs pb-2 border-b border-white/10 relative">
           <div className="flex items-center gap-2 flex-wrap min-w-0">
             
             {/* Year Selector Dropdown */}
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setYearMenuOpen(!yearMenuOpen)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/20 text-white font-mono text-[11px] font-bold transition-all shadow-sm"
+            <div className="relative flex items-center bg-white/[0.08] hover:bg-white/[0.14] border border-white/20 hover:border-white/40 rounded-xl px-2.5 py-1.5 transition-all shadow-sm">
+              <History size={12} className="text-zinc-400 mr-1.5 pointer-events-none" />
+              <select
+                value={selectedYear}
+                onChange={(e) => setYear(Number(e.target.value))}
+                className="bg-transparent text-white font-mono text-[11px] font-bold cursor-pointer focus:outline-none pr-4 appearance-none"
+                style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
+                title="Select Year (1990 - 2024)"
               >
-                <History size={12} className="text-zinc-400" />
-                <span>{selectedYear}</span>
-                <ChevronDown size={11} className={`text-zinc-400 transition-transform ${yearMenuOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {yearMenuOpen && (
-                <div className="absolute bottom-full mb-2 left-0 w-64 max-h-72 overflow-y-auto bg-black/95 border border-white/20 rounded-xl shadow-2xl p-2 z-50 backdrop-blur-2xl font-mono text-[11px] scrollbar-thin">
-                  <div className="px-2 py-1 text-[9px] uppercase tracking-wider text-zinc-500 font-semibold">
-                    Key Historical Deluges
-                  </div>
-                  <div className="grid grid-cols-2 gap-1 mb-2 pb-2 border-b border-white/10">
-                    {[
-                      { y: 2024, note: 'Recent' },
-                      { y: 2019, note: '375mm Surge' },
-                      { y: 2005, note: '566mm Deluge' },
-                      { y: 1991, note: '646mm Record' },
-                    ].map((item) => (
-                      <button
-                        key={item.y}
-                        onClick={() => {
-                          setYear(item.y);
-                          setYearMenuOpen(false);
-                        }}
-                        className={`px-2 py-1.5 rounded-lg text-left transition-all ${
-                          selectedYear === item.y
-                            ? 'bg-white text-black font-bold'
-                            : 'bg-white/[0.04] text-zinc-300 hover:bg-white/10 hover:text-white'
-                        }`}
-                      >
-                        <div className="font-bold">{item.y}</div>
-                        <div className="text-[9px] opacity-70 truncate">{item.note}</div>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="px-2 py-1 text-[9px] uppercase tracking-wider text-zinc-500 font-semibold">
-                    All Recorded Years (1990 - 2024)
-                  </div>
-                  <div className="grid grid-cols-4 gap-1">
-                    {AVAILABLE_YEARS.map((y) => (
-                      <button
-                        key={y}
-                        onClick={() => {
-                          setYear(y);
-                          setYearMenuOpen(false);
-                        }}
-                        className={`px-1.5 py-1 text-center rounded-lg transition-all ${
-                          selectedYear === y
-                            ? 'bg-white text-black font-bold'
-                            : 'text-zinc-400 hover:text-white hover:bg-white/10'
-                        }`}
-                      >
-                        {y}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+                <optgroup label="Notable Disaster Deluges" className="bg-zinc-900 text-amber-400 font-bold">
+                  <option value={2024} className="bg-zinc-900 text-white">2024 (Recent Deluge)</option>
+                  <option value={2021} className="bg-zinc-900 text-white">2021 (Cloudburst Surge)</option>
+                  <option value={2019} className="bg-zinc-900 text-white">2019 (375mm July Surge)</option>
+                  <option value={2017} className="bg-zinc-900 text-white">2017 (315mm Monsoon)</option>
+                  <option value={2005} className="bg-zinc-900 text-amber-400">2005 (566mm Great Deluge)</option>
+                  <option value={1991} className="bg-zinc-900 text-white">1991 (646mm Record)</option>
+                </optgroup>
+                <optgroup label="All Recorded Years (1990 - 2024)" className="bg-zinc-900 text-zinc-400">
+                  {AVAILABLE_YEARS.map((y) => (
+                    <option key={y} value={y} className="bg-zinc-900 text-white">
+                      {y}
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+              <ChevronDown size={11} className="text-zinc-400 absolute right-2 pointer-events-none" />
             </div>
 
             {/* Month Filter Selector */}
