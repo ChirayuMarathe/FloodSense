@@ -34,15 +34,13 @@ import { HazardPins } from './HazardPins';
 import { wardProfileKey, type WardRiskProfile } from '../risk/WardRiskProfile';
 import { isRemoteEnabled, wardGeojsonUrl } from './gisUrlResolver';
 
-type CityKey = 'mumbai' | 'pune' | 'navi_mumbai';
+type CityKey = 'mumbai';
 
-const ALL_CITIES: CityKey[] = ['mumbai', 'pune', 'navi_mumbai'];
+const ALL_CITIES: CityKey[] = ['mumbai'];
 
 // Label visibility thresholds (camera altitude in meters)
 const LABEL_THRESHOLDS = {
   mumbai: { showCode: 30000, showName: 12000 },
-  pune: { showCode: 30000, showName: 12000 },
-  navi_mumbai: { showCode: 20000, showName: 6000 }, // Tighter thresholds for 111 wards
 };
 
 interface CityLayerData {
@@ -121,6 +119,7 @@ export class WardLayer {
   private wardPolygonEntities: Map<string, Entity> = new Map();
   private wardBoundaryPositions: Map<string, Cartesian3[]> = new Map();
   private wardLineEntities: Map<string, Entity[]> = new Map();
+  private loadingCities: Set<CityKey> = new Set();
 
   constructor(viewer: Viewer) {
     this.viewer = viewer;
@@ -175,19 +174,24 @@ export class WardLayer {
    * Load a single city's ward boundaries.
    */
   public async loadCity(city: CityKey): Promise<void> {
-    if (this.cityLayers.has(city)) return;
+    if (this.cityLayers.has(city) || this.loadingCities.has(city)) return;
+    if (!this.viewer || (this.viewer as any).isDestroyed?.()) return;
 
-    // When remote storage is configured, fetch pre-normalized GeoJSON directly
-    // from Supabase CDN. Otherwise use the local API route which normalizes on the fly.
-    const apiUrl = isRemoteEnabled ? wardGeojsonUrl(city) : `/api/wards/${city}`;
-    const source = isRemoteEnabled ? 'Supabase Storage' : 'API route';
+    this.loadingCities.add(city);
+    try {
+      // When remote storage is configured, fetch pre-normalized GeoJSON directly
+      // from Supabase CDN. Otherwise use the local API route which normalizes on the fly.
+      const apiUrl = isRemoteEnabled ? wardGeojsonUrl(city) : `/api/wards/${city}`;
+      const source = isRemoteEnabled ? 'Supabase Storage' : 'API route';
 
-    // Fetch normalized GeoJSON
-    const response = await fetch(apiUrl);
-    if (!response.ok) {
-      throw new Error(`${source} returned ${response.status} for ${city}`);
-    }
-    const geojson = await response.json();
+      // Fetch normalized GeoJSON
+      const response = await fetch(apiUrl);
+      if (!response.ok) {
+        throw new Error(`${source} returned ${response.status} for ${city}`);
+      }
+      const geojson = await response.json();
+
+      if (!this.viewer || (this.viewer as any).isDestroyed?.() || !this.viewer.entities) return;
 
     if (!isRemoteEnabled) {
       console.log(`[WardLayer] ${city} — wards: ${response.headers.get('X-Ward-Count')}, coords fixed: ${response.headers.get('X-Coords-Fixed')}, simplified: ${response.headers.get('X-Simplified')}`);
@@ -218,7 +222,7 @@ export class WardLayer {
       if (rings.length > 0) {
         const outerRing = rings[0];
         // Simplify outer ring and ensure Counter-Clockwise order for Cesium ClippingPolygon
-        const simplifiedOuter = simplifyRing2D(outerRing, 0.0006);
+        const simplifiedOuter = simplifyRing2D(outerRing, 0.00005);
         const ccwOuter = ensureCounterClockwiseRing(simplifiedOuter);
         const flatOuter: number[] = [];
         for (const pt of ccwOuter) {
@@ -237,7 +241,7 @@ export class WardLayer {
 
         // Add clamped vector polyline for each boundary ring with optimized geometry
         for (const ring of rings) {
-          const simplified = simplifyRing2D(ring, 0.0006);
+          const simplified = simplifyRing2D(ring, 0.00005);
           const flatRing: number[] = [];
           for (const pt of simplified) {
             flatRing.push(pt[0], pt[1]);
@@ -322,7 +326,9 @@ export class WardLayer {
         entity.polygon.material = fillMaterial;
         entity.polygon.perPositionHeight = new ConstantProperty(false);
         entity.polygon.height = new ConstantProperty(0);
-        entity.polygon.arcType = new ConstantProperty(ArcType.RHUMB);
+        entity.polygon.extrudedHeight = new ConstantProperty(15);
+        entity.polygon.outline = new ConstantProperty(true);
+        entity.polygon.outlineColor = new ConstantProperty(outlineColor);
 
         entityMaterials.set(normalized.wardId, { fill: fillMaterial, outline: outlineColor });
         this.wardPolygonEntities.set(normalized.wardId, entity);
@@ -342,7 +348,7 @@ export class WardLayer {
           position: centroid,
           label: {
             text: normalized.wardCode,
-            font: city === 'navi_mumbai' ? '11px sans-serif' : '13px sans-serif',
+            font: '13px sans-serif',
             fillColor: Color.WHITE,
             outlineColor: Color.BLACK,
             outlineWidth: 2,
@@ -373,6 +379,7 @@ export class WardLayer {
     }
 
     // Add data source to viewer
+    if (!this.viewer || (this.viewer as any).isDestroyed?.() || !this.viewer.dataSources) return;
     this.viewer.dataSources.add(dataSource);
 
     // Store city layer data
@@ -383,6 +390,9 @@ export class WardLayer {
       visible: true,
       entityMaterials,
     });
+    } finally {
+      this.loadingCities.delete(city);
+    }
   }
 
   /**
@@ -447,7 +457,15 @@ export class WardLayer {
 
   /**
    * Update the real ward polygon boundaries for all wards from their computed risk profiles.
-   * Eliminates the cylindrical circles and colors the actual administrative boundaries.
+   * Uses continuous flood depth gradient coloring synchronized with the timeline.
+   *
+   * Color stops (from user spec):
+   *   0–0.1m   → Transparent (dry)
+   *   0.1–0.5m → Cyan #22D3EE (shallow)
+   *   0.5–1.0m → Blue #1685FF (moderate)
+   *   1.0–2.0m → Deep blue #4338FF (significant)
+   *   2.0–3.0m → Violet #8B5CF6 (severe)
+   *   >3.0m    → Magenta #D946EF (catastrophic)
    */
   updateFromProfiles(profiles: Record<string, WardRiskProfile>): void {
     // 1. Ensure all cylinder ellipses are removed from centroid label entities
@@ -459,47 +477,33 @@ export class WardLayer {
       }
     }
 
-    // 2. Dynamically style the ACTUAL WARD BOUNDARY POLYGONS & VECTOR POLYLINES
+    // 2. Dynamically style ward boundaries using continuous flood depth gradient
     for (const [wardKey, entity] of this.wardPolygonEntities.entries()) {
       if (!entity.polygon) continue;
       const profile =
         profiles[wardKey] ||
         profiles[wardProfileKey(wardKey)] ||
         profiles[`mumbai_${wardKey}`] ||
-        profiles[`mumbai_${wardProfileKey(wardKey)}`] ||
-        profiles[`pune_${wardKey}`] ||
-        profiles[`pune_${wardProfileKey(wardKey)}`] ||
-        profiles[`navi_mumbai_${wardKey}`] ||
-        profiles[`navi_mumbai_${wardProfileKey(wardKey)}`];
+        profiles[`mumbai_${wardProfileKey(wardKey)}`];
+
+      const depth = profile?.estimatedFloodDepthM ?? 0;
       const sev = profile ? profile.overallSeverity : 0;
 
-      // Compute dynamic 3D volumetric extrusion height (in meters) representing flood load
+      // --- Flood Depth → Color (smooth lerp between stops) ---
+      const { fillColor, outlineColor, glowIntensity } = this.getFloodDepthColors(depth);
+
+      // Dynamic 3D volumetric extrusion height representing flood depth and hydrologic load
       const rainBonus = Math.min(profile?.rainfall3DaySum ?? 0, 300);
       const extrudedHeight =
-        sev === 3 ? 380 + rainBonus * 0.45 :  // ~480m: Critical Emergency Risk Pillar
-        sev === 2 ? 220 + rainBonus * 0.25 :  // ~270m: Elevated Runoff Plateau
-        sev === 1 ? 90 + rainBonus * 0.15 :   // ~120m: Advisory Watch Tier
-        15;                                   // ~15m: Nominal Baseline Footprint
+        depth > 2.0 ? 350 + rainBonus * 0.45 :
+        depth > 1.0 ? 220 + rainBonus * 0.30 :
+        depth > 0.5 ? 130 + rainBonus * 0.20 :
+        depth > 0.1 ? 60 + rainBonus * 0.10 :
+        15;
 
-      // Sleek, high-contrast monochrome & frosted titanium water column aesthetic
-      // Replaces muddy opaque red with crystalline luminous 3D volumetric intelligence
-      const fillColor =
-        sev === 3 ? Color.fromCssColorString('rgba(255, 255, 255, 0.40)') :   // Critical: Luminescent Titanium White Prism
-        sev === 2 ? Color.fromCssColorString('rgba(212, 212, 216, 0.24)') :  // Elevated: Frosted Zinc-300 Glass
-        sev === 1 ? Color.fromCssColorString('rgba(161, 161, 170, 0.14)') :  // Watch: Subtle Slate-500 Glass
-                    Color.fromCssColorString('rgba(255, 255, 255, 0.03)');   // Nominal: Crystal Clear Base
-
-      const outlineColor =
-        sev === 3 ? Color.fromCssColorString('#FFFFFF') :                      // Pure Crisp White Rim
-        sev === 2 ? Color.fromCssColorString('rgba(212, 212, 216, 0.85)') :   // Zinc-300
-        sev === 1 ? Color.fromCssColorString('rgba(161, 161, 170, 0.60)') :   // Zinc-500
-                    Color.fromCssColorString('rgba(255, 255, 255, 0.20)');   // Subtle Graphite
-
-      // Apply real 3D extrusion to the polygon geometry
       entity.polygon.perPositionHeight = new ConstantProperty(false);
       entity.polygon.height = new ConstantProperty(0);
       entity.polygon.extrudedHeight = new ConstantProperty(extrudedHeight);
-      entity.polygon.arcType = new ConstantProperty(ArcType.RHUMB);
       entity.polygon.outline = new ConstantProperty(true);
       entity.polygon.outlineColor = new ConstantProperty(outlineColor);
 
@@ -507,14 +511,17 @@ export class WardLayer {
         entity.polygon.material = new ColorMaterialProperty(fillColor);
       }
 
-      // Update vector polylines for crisp, surgically clean ground footprint outlines
-      const groundOutlineColor =
-        sev === 3 ? Color.fromCssColorString('rgba(255, 255, 255, 0.85)') :
-        sev === 2 ? Color.fromCssColorString('rgba(212, 212, 216, 0.60)') :
-        sev === 1 ? Color.fromCssColorString('rgba(161, 161, 170, 0.40)') :
-                    Color.fromCssColorString('rgba(255, 255, 255, 0.15)');
-
-      const groundWidth = sev === 3 ? 2.0 : sev === 2 ? 1.5 : 1.0;
+      // Update vector polylines: glow intensity scales with depth
+      const groundWidth = depth > 2.0 ? 2.5 : depth > 1.0 ? 2.0 : depth > 0.5 ? 1.5 : 1.0;
+      const groundOutlineColor = depth > 2.0
+        ? Color.fromCssColorString(`rgba(139, 92, 246, ${0.4 + glowIntensity * 0.5})`)
+        : depth > 1.0
+          ? Color.fromCssColorString(`rgba(67, 56, 255, ${0.3 + glowIntensity * 0.4})`)
+          : depth > 0.5
+            ? Color.fromCssColorString(`rgba(22, 133, 255, ${0.25 + glowIntensity * 0.35})`)
+            : depth > 0.1
+              ? Color.fromCssColorString(`rgba(34, 211, 238, ${0.2 + glowIntensity * 0.3})`)
+              : Color.fromCssColorString('rgba(255, 255, 255, 0.15)');
 
       const lines =
         this.wardLineEntities.get(wardKey) ||
@@ -532,6 +539,85 @@ export class WardLayer {
 
     // Trigger immediate frame render
     this.viewer.scene.requestRender();
+  }
+
+  /**
+   * Compute flood depth gradient colors using smooth linear interpolation
+   * between the specified color stops.
+   */
+  private getFloodDepthColors(depth: number): {
+    fillColor: Color;
+    outlineColor: Color;
+    glowIntensity: number;
+  } {
+    // Transparent / dry
+    if (depth <= 0.1) {
+      return {
+        fillColor: Color.fromCssColorString('rgba(255, 255, 255, 0.03)'),
+        outlineColor: Color.fromCssColorString('rgba(255, 255, 255, 0.20)'),
+        glowIntensity: 0,
+      };
+    }
+
+    // Color stops as [r, g, b] (0-255)
+    const CYAN    = [34, 211, 238];    // #22D3EE
+    const BLUE    = [22, 133, 255];    // #1685FF
+    const DEEP    = [67, 56, 255];     // #4338FF
+    const VIOLET  = [139, 92, 246];    // #8B5CF6
+    const MAGENTA = [217, 70, 239];    // #D946EF
+
+    let r: number, g: number, b: number, alpha: number;
+
+    if (depth <= 0.5) {
+      // 0.1–0.5m: Cyan, alpha 0.12→0.22
+      const t = (depth - 0.1) / 0.4;
+      [r, g, b] = CYAN;
+      alpha = 0.12 + t * 0.10;
+    } else if (depth <= 1.0) {
+      // 0.5–1.0m: Cyan → Blue, alpha 0.22→0.30
+      const t = (depth - 0.5) / 0.5;
+      r = CYAN[0] + (BLUE[0] - CYAN[0]) * t;
+      g = CYAN[1] + (BLUE[1] - CYAN[1]) * t;
+      b = CYAN[2] + (BLUE[2] - CYAN[2]) * t;
+      alpha = 0.22 + t * 0.08;
+    } else if (depth <= 2.0) {
+      // 1.0–2.0m: Blue → Deep Blue, alpha 0.30→0.38
+      const t = (depth - 1.0) / 1.0;
+      r = BLUE[0] + (DEEP[0] - BLUE[0]) * t;
+      g = BLUE[1] + (DEEP[1] - BLUE[1]) * t;
+      b = BLUE[2] + (DEEP[2] - BLUE[2]) * t;
+      alpha = 0.30 + t * 0.08;
+    } else if (depth <= 3.0) {
+      // 2.0–3.0m: Deep Blue → Violet, alpha 0.38→0.45
+      const t = (depth - 2.0) / 1.0;
+      r = DEEP[0] + (VIOLET[0] - DEEP[0]) * t;
+      g = DEEP[1] + (VIOLET[1] - DEEP[1]) * t;
+      b = DEEP[2] + (VIOLET[2] - DEEP[2]) * t;
+      alpha = 0.38 + t * 0.07;
+    } else {
+      // >3.0m: Violet → Magenta, alpha 0.45→0.50
+      const t = Math.min(1.0, (depth - 3.0) / 0.5);
+      r = VIOLET[0] + (MAGENTA[0] - VIOLET[0]) * t;
+      g = VIOLET[1] + (MAGENTA[1] - VIOLET[1]) * t;
+      b = VIOLET[2] + (MAGENTA[2] - VIOLET[2]) * t;
+      alpha = 0.45 + t * 0.05;
+    }
+
+    const fillColor = new Color(r / 255, g / 255, b / 255, alpha);
+
+    // Outline: same hue, brighter and more opaque
+    const outlineAlpha = Math.min(0.9, alpha + 0.35);
+    const outlineColor = new Color(
+      Math.min(1.0, (r / 255) * 1.2 + 0.15),
+      Math.min(1.0, (g / 255) * 1.2 + 0.15),
+      Math.min(1.0, (b / 255) * 1.2 + 0.15),
+      outlineAlpha
+    );
+
+    // Glow intensity for polyline halos (0 to 1)
+    const glowIntensity = Math.min(1.0, depth / 3.0);
+
+    return { fillColor, outlineColor, glowIntensity };
   }
 
   /**
@@ -715,12 +801,16 @@ export class WardLayer {
     const layer = this.cityLayers.get(city);
     if (!layer) return;
 
-    this.viewer.dataSources.remove(layer.dataSource, true);
-    for (const labelEntity of layer.labelEntities) {
-      this.viewer.entities.remove(labelEntity);
-    }
-    for (const lineEntity of layer.lineEntities) {
-      this.viewer.entities.remove(lineEntity);
+    if (this.viewer && !this.viewer.isDestroyed()) {
+      try {
+        this.viewer.dataSources.remove(layer.dataSource, true);
+        for (const labelEntity of layer.labelEntities) {
+          this.viewer.entities.remove(labelEntity);
+        }
+        for (const lineEntity of layer.lineEntities) {
+          this.viewer.entities.remove(lineEntity);
+        }
+      } catch (e) {}
     }
     this.cityLayers.delete(city);
   }

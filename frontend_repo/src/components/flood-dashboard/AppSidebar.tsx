@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { useFloodStore } from '@/store/flood-store';
 import { mumbaiWards } from '@/lib/mumbai-data';
-import { puneWards } from '@/lib/pune-data';
 import { useState } from 'react';
 import { Logo } from './Logo';
 
@@ -21,18 +20,15 @@ const navItems = [
   { href: '/reports', label: 'Reports', icon: FileText },
 ];
 
-// City layer config for the ward controls
+// City layer config for the ward controls (Mumbai only)
 const CITY_LAYERS = [
-  { key: 'mumbai' as const, label: 'Mumbai', color: '#FFFFFF', wardCount: 24 },
-  { key: 'pune' as const, label: 'Pune', color: '#D4D4D8', wardCount: 58 },
-  { key: 'navi_mumbai' as const, label: 'Navi Mumbai', color: '#A1A1AA', wardCount: 111 },
+  { key: 'mumbai' as const, label: 'Mumbai Wards', color: '#FFFFFF', wardCount: 24 },
 ];
 
 export default function AppSidebar() {
   const pathname = usePathname();
   const { 
     pinnedWards, wardSeverities, setSelectedWard, 
-    activeCity, switchCity,
     wardLayerVisibility, toggleWardLayerVisibility,
     wardFillMode, toggleWardFillMode,
     buildingMode, setBuildingMode,
@@ -65,22 +61,16 @@ export default function AppSidebar() {
 
       <div className="mx-4 border-t border-white/10" />
 
-      {/* City Switcher — now includes Navi Mumbai */}
-      <div className="px-4 py-3">
-        <div className="flex bg-white/[0.04] rounded-xl p-1 border border-white/10">
-          {(['mumbai', 'pune', 'navi_mumbai'] as const).map((city) => (
-            <button
-              key={city}
-              onClick={() => switchCity(city)}
-              className={`flex-1 py-1.5 rounded-lg text-[10px] font-medium transition-all ${
-                activeCity === city
-                  ? 'bg-white/15 text-white shadow-sm font-semibold'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {city === 'navi_mumbai' ? 'Navi Mum.' : city.charAt(0).toUpperCase() + city.slice(1)}
-            </button>
-          ))}
+      {/* Municipal Sector Coverage Badge */}
+      <div className="px-4 py-2.5">
+        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.04] border border-white/10">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+            <span className="text-[11px] font-semibold text-white font-satoshi">Greater Mumbai</span>
+          </div>
+          <span className="text-[10px] font-mono text-zinc-400 bg-white/5 px-2 py-0.5 rounded-full border border-white/10">
+            24 Wards
+          </span>
         </div>
       </div>
 
@@ -264,8 +254,7 @@ export default function AppSidebar() {
               className="overflow-hidden space-y-1"
             >
               {pinnedWards.map((wardId) => {
-                const allWards = activeCity === 'pune' ? puneWards : mumbaiWards;
-                const ward = allWards.find((w) => w.id === wardId);
+                const ward = mumbaiWards.find((w) => w.id === wardId);
                 if (!ward) return null;
                 const sev = wardSeverities[wardId] ?? 0;
                 return (

@@ -54,14 +54,14 @@ const severityTheme: Record<number, {
 type FilterLevel = 'all' | 'critical' | 'elevated' | 'watch' | 'nominal';
 
 export default function AlertsPage() {
-  const { alertHistory, wardSeverities, wardRiskProfiles, activeCity, switchCity, timeIndex, selectedWardId, setSelectedWard, currentTimeData } = useFloodStore();
+  const { alertHistory, wardSeverities, wardRiskProfiles, timeIndex, selectedWardId, setSelectedWard, currentTimeData } = useFloodStore();
   const [filterLevel, setFilterLevel] = useState<FilterLevel>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedWard, setExpandedWard] = useState<string | null>(null);
 
   const td = currentTimeData() || timeSeriesData[0];
-  const cityLabel = activeCity === 'navi_mumbai' ? 'Navi Mumbai' : activeCity.charAt(0).toUpperCase() + activeCity.slice(1);
-  const cityWards = useMemo(() => getWardsForCity(activeCity), [activeCity]);
+  const cityLabel = 'Mumbai';
+  const cityWards = useMemo(() => getWardsForCity('mumbai'), []);
 
   // Compute ward alert status for active city
   const wardAlerts = useMemo(() => {
@@ -159,21 +159,10 @@ export default function AlertsPage() {
           </div>
           
           <div className="flex items-center gap-3 flex-wrap">
-            {/* 3-City Switcher Bar */}
-            <div className="flex items-center gap-1 p-1 rounded-xl bg-black/80 border border-white/10 shadow-sm">
-              {(['mumbai', 'pune', 'navi_mumbai'] as const).map(city => (
-                <button
-                  key={city}
-                  onClick={() => switchCity(city)}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-                    activeCity === city
-                      ? 'bg-white/15 text-white font-semibold shadow-inner'
-                      : 'text-[#8B919E] hover:text-white'
-                  }`}
-                >
-                  {city === 'navi_mumbai' ? 'Navi Mumbai' : city.charAt(0).toUpperCase() + city.slice(1)}
-                </button>
-              ))}
+            {/* Municipal Sector Badge */}
+            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-black/80 border border-white/10 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+              <span className="text-[11px] text-white font-mono font-semibold">BMC Sector: Mumbai (24 Wards)</span>
             </div>
 
             <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-black/80 border border-white/10 shadow-sm">

@@ -137,7 +137,7 @@ export async function POST(request: Request) {
       ? buildQueryPrompt(profile, userQuery)
       : buildAlertPrompt(profile);
 
-    const modelsToTry = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'allam-2-7b'];
+    const modelsToTry = ['llama-3.3-70b-versatile', 'mixtral-8x7b-32768', 'llama-3.1-8b-instant'];
     let aiMessage = '';
     let lastErr: any = null;
 
@@ -150,7 +150,7 @@ export async function POST(request: Request) {
           max_tokens: 1000,
         });
         const msg = completion.choices[0]?.message;
-        aiMessage = msg?.content || (msg as any)?.reasoning || '';
+        aiMessage = msg?.content || '';
         if (aiMessage) break;
       } catch (err) {
         lastErr = err;
@@ -161,13 +161,13 @@ export async function POST(request: Request) {
     if (!aiMessage) {
       throw lastErr || new Error('No response generated from AI models.');
     }
-    const sev = severityColors[profile.overallSeverity];
+    const sev = (severityColors as any)[profile.overallSeverity] || severityColors[0];
 
     return NextResponse.json({
       wardId: profile.wardId,
       wardName: profile.wardName,
       severity: profile.overallSeverity,
-      severityLabel: sev.label,
+      severityLabel: sev?.label || 'UNKNOWN',
       response: aiMessage,
       generatedAt: new Date().toISOString(),
     });

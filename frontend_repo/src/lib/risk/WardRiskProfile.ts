@@ -47,6 +47,9 @@ export interface WardRiskProfile {
   twiMean: number;                 // topographic wetness index
   flowAccumulationMean: number;
 
+  // Flood depth estimation (meters) for 3D gradient visualization
+  estimatedFloodDepthM: number;  // 0.0 = dry, up to ~3.5m for catastrophic flooding
+
   // Trend + urgency
   rainfallTrend: "rising" | "falling" | "steady";
   estimatedTimeToThresholdHours: number | null; // null if not currently trending toward risk

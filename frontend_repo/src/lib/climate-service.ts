@@ -115,3 +115,47 @@ export function getTimeSeriesForPeriod(year: number, month: number | 'all' | 'mo
 
   return result;
 }
+
+export interface MonthSummary {
+  month: number;
+  label: string;
+  fullName: string;
+  isMonsoon: boolean;
+  totalRainfall: number;
+  peakRainfall: number;
+  avgSoilMoisture: number;
+  daysCount: number;
+}
+
+/**
+ * Returns annual 12-month summary statistics for high-level dashboard exploration.
+ */
+export function getAnnualMonthlyBreakdown(year: number): MonthSummary[] {
+  const result: MonthSummary[] = [];
+  for (let m = 1; m <= 12; m++) {
+    const key = `${year}-${String(m).padStart(2, '0')}`;
+    const days = byYearMonth[key] || [];
+    let sumRain = 0;
+    let maxRain = 0;
+    let sumSoil = 0;
+
+    for (const d of days) {
+      const r = d.rainfall_3day_sum || 0;
+      if (r > maxRain) maxRain = r;
+      sumRain += (d.rainfall_mm || (r / 3));
+      sumSoil += (d.soil_moisture || 0);
+    }
+
+    result.push({
+      month: m,
+      label: MONTH_NAMES[m - 1]?.label || `M${m}`,
+      fullName: MONTH_NAMES[m - 1]?.fullName || `Month ${m}`,
+      isMonsoon: m >= 6 && m <= 9,
+      totalRainfall: Math.round(sumRain),
+      peakRainfall: Math.round(maxRain),
+      avgSoilMoisture: days.length > 0 ? Math.round((sumSoil / days.length) * 100) : 0,
+      daysCount: days.length,
+    });
+  }
+  return result;
+}

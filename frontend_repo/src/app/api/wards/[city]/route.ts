@@ -6,12 +6,12 @@ import { normalizeWardGeoJSON, type NormalizationResult } from '@/lib/gis/wardNo
 // In-memory cache — these files are static, no need to reprocess on every request
 const cache = new Map<string, NormalizationResult>();
 
-const VALID_CITIES = ['mumbai', 'pune', 'navi_mumbai'] as const;
+const VALID_CITIES = ['mumbai', 'navi_mumbai', 'pune'] as const;
 
 const FILE_MAP: Record<string, string> = {
   mumbai: 'mumbai.geojson',
-  pune: 'pune.geojson',
   navi_mumbai: 'navi_mumbai.geojson',
+  pune: 'pune.geojson',
 };
 
 export async function GET(

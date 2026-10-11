@@ -24,20 +24,6 @@ export const CITY_COLORS = {
     highlight: { r: 0.4, g: 0.65, b: 1.0, a: 0.4 },      // Hover highlight
     label: '#3B82F6',
   },
-  pune: {
-    outline: { r: 0.96, g: 0.62, b: 0.04, a: 0.85 },  // #F59E0B Amber
-    fill: { r: 0.96, g: 0.62, b: 0.04, a: 0.01 },
-    fillActive: { r: 0.96, g: 0.62, b: 0.04, a: 0.15 },
-    highlight: { r: 1.0, g: 0.75, b: 0.2, a: 0.4 },
-    label: '#F59E0B',
-  },
-  navi_mumbai: {
-    outline: { r: 0.06, g: 0.73, b: 0.51, a: 0.85 },  // #10B981 Green
-    fill: { r: 0.06, g: 0.73, b: 0.51, a: 0.01 },
-    fillActive: { r: 0.06, g: 0.73, b: 0.51, a: 0.15 },
-    highlight: { r: 0.2, g: 0.85, b: 0.6, a: 0.4 },
-    label: '#10B981',
-  },
 } as const;
 
 /**
@@ -45,8 +31,6 @@ export const CITY_COLORS = {
  */
 export const CITY_CENTERS = {
   mumbai: { lng: 72.8777, lat: 19.076, altitude: 3000 },
-  pune: { lng: 73.8567, lat: 18.5204, altitude: 3000 },
-  navi_mumbai: { lng: 73.0297, lat: 19.0330, altitude: 3000 },
 } as const;
 
 /**
@@ -70,7 +54,7 @@ export function extractNormalizedProperties(rawProps: Record<string, any>, cityH
 }
 
 /**
- * Normalizer for raw and pre-normalized properties across Mumbai, Pune, and Navi Mumbai.
+ * Normalizer for raw and pre-normalized properties across Mumbai.
  */
 export function normalizeWardProperties(city: string, rawProperties: any): NormalizedWardProperties {
   if (rawProperties?.ward_id && rawProperties.ward_id !== 'unknown') {
@@ -82,37 +66,10 @@ export function normalizeWardProperties(city: string, rawProperties: any): Norma
     };
   }
 
-  let wardId: string;
-  let wardCode: string;
-  let wardName: string;
+  const rawName = (rawProperties?.NAME2 || rawProperties?.Name || rawProperties?.ward || rawProperties?.WARD || rawProperties?.name || 'Unknown').toString().trim();
+  const wardCode = rawName;
+  const wardName = rawName;
+  const wardId = rawName; // Primary key matches canonical ward code (e.g. "T", "K/W", "A", "D")
 
-  switch (city.toLowerCase()) {
-    case 'mumbai': {
-      const rawName = (rawProperties?.NAME2 || rawProperties?.Name || rawProperties?.ward || rawProperties?.WARD || rawProperties?.name || 'Unknown').toString().trim();
-      wardCode = rawName;
-      wardName = rawName;
-      wardId = rawName; // Primary key matches canonical ward code (e.g. "T", "K/W", "A", "D")
-      break;
-    }
-    case 'pune': {
-      const num = rawProperties?.wardnum || rawProperties?.OBJECTID || 0;
-      wardCode = num.toString().padStart(2, '0');
-      wardName = (rawProperties?.Name2 || rawProperties?.Name1 || `Ward ${wardCode}`).toString().trim();
-      wardId = `pune_${num}`;
-      break;
-    }
-    case 'navi_mumbai': {
-      const code = (rawProperties?.sourcewardcode || rawProperties?.OBJECTID || '0').toString();
-      wardCode = code;
-      wardName = `Ward No.${code}`;
-      wardId = `navi_mumbai_${code}`;
-      break;
-    }
-    default:
-      wardId = 'unknown';
-      wardCode = 'Unknown';
-      wardName = 'Unknown';
-  }
-
-  return { wardId, wardName, wardCode, city };
+  return { wardId, wardName, wardCode, city: 'mumbai' };
 }

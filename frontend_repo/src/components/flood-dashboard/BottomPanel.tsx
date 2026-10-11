@@ -142,7 +142,7 @@ export default function BottomPanel({ mode = 'floating' }: BottomPanelProps) {
 
   const containerClasses =
     mode === 'floating'
-      ? `absolute bottom-5 z-20 pointer-events-auto transition-all duration-300 ${
+      ? `absolute bottom-3 z-20 pointer-events-auto transition-all duration-300 ${
           ragPanelOpen
             ? 'left-1/2 -translate-x-[calc(50%+130px)] w-[900px] max-w-[calc(100vw-450px-270px)]'
             : 'left-1/2 -translate-x-1/2 w-[980px] max-w-[calc(100vw-300px)]'
@@ -156,7 +156,7 @@ export default function BottomPanel({ mode = 'floating' }: BottomPanelProps) {
       transition={{ duration: 0.25 }}
       className={containerClasses}
     >
-      <div className="flex flex-col gap-2.5 p-4 rounded-2xl bg-black/95 backdrop-blur-2xl border border-white/15 shadow-[0_24px_64px_rgba(0,0,0,0.95),inset_0_1px_1px_rgba(255,255,255,0.06)] font-satoshi">
+      <div className="flex flex-col gap-2 p-3.5 rounded-2xl bg-black/95 backdrop-blur-2xl border border-white/15 shadow-[0_24px_64px_rgba(0,0,0,0.95),inset_0_1px_1px_rgba(255,255,255,0.06)] font-satoshi">
         
         {/* ROW 1: Year & Month Selectors + Historical Fast Jumps */}
         <div className="flex items-center justify-between gap-2.5 text-xs pb-2 border-b border-white/10 overflow-hidden">

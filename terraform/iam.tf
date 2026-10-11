@@ -109,6 +109,20 @@ resource "aws_iam_policy" "lambda_services" {
           aws_sns_topic.alerts.arn
         ]
       },
+      # SQS Queue Operations for Citizen Reports
+      {
+        Action = [
+          "sqs:SendMessage",
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes"
+        ]
+        Effect = "Allow"
+        Resource = [
+          aws_sqs_queue.citizen_reports_queue.arn,
+          aws_sqs_queue.citizen_reports_dlq.arn
+        ]
+      },
       # Amazon Bedrock Foundation Models (Claude 3)
       {
         Action = [

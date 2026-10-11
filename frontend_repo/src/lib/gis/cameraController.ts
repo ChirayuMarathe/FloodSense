@@ -6,8 +6,6 @@ export const CITY_CAMERA_VIEWS: Record<
   { lng: number; lat: number; altitude: number; heading: number; pitch: number }
 > = {
   mumbai: { lng: 72.8650, lat: 19.0150, altitude: 9500, heading: 15, pitch: -38 },
-  pune: { lng: 73.8567, lat: 18.5204, altitude: 14000, heading: 0, pitch: -40 }, // Higher altitude, steeper pitch for Pune hills
-  navi_mumbai: { lng: 73.0297, lat: 19.0330, altitude: 11000, heading: 0, pitch: -30 }, // Flatter layout
 };
 
 // Closer default for flying into an individual ward

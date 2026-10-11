@@ -46,6 +46,26 @@ function safeInt(val: string | undefined): number {
   return isNaN(n) ? 0 : n;
 }
 
+async function fetchCSVText(filename: string): Promise<string> {
+  try {
+    const primaryUrl = climateDataUrl(filename);
+    const res = await fetch(primaryUrl);
+    if (res.ok) {
+      const text = await res.text();
+      if (text && text.length > 50) return text;
+    }
+  } catch (err) {
+    console.warn(`[dataLoader] Remote fetch failed for ${filename}, trying local fallback:`, err);
+  }
+
+  // Robust fallback to local /data/ directory
+  const localRes = await fetch(`/data/${filename}`);
+  if (!localRes.ok) {
+    throw new Error(`Failed to load ${filename} (status ${localRes.status})`);
+  }
+  return await localRes.text();
+}
+
 let zonalStatsPromise: Promise<Map<number, WardZonalStats>> | null = null;
 let trainingTablePromise: Promise<TrainingTableRow[]> | null = null;
 let climateTimeSeriesPromise: Promise<ClimateSnapshot[]> | null = null;
@@ -62,8 +82,7 @@ export async function loadWardZonalStats(): Promise<Map<number, WardZonalStats>>
   if (zonalStatsPromise) return zonalStatsPromise;
 
   zonalStatsPromise = (async () => {
-    const response = await fetch(climateDataUrl('ward_zonal_stats.csv'));
-    const text = await response.text();
+    const text = await fetchCSVText('ward_zonal_stats.csv');
     const rows = parseCSV(text);
     
     const map = new Map<number, WardZonalStats>();
@@ -105,8 +124,7 @@ export async function loadTrainingTable(): Promise<TrainingTableRow[]> {
   if (trainingTablePromise) return trainingTablePromise;
 
   trainingTablePromise = (async () => {
-    const response = await fetch(climateDataUrl('training_table_master.csv'));
-    const text = await response.text();
+    const text = await fetchCSVText('training_table_master.csv');
     const rows = parseCSV(text);
     
     const result: TrainingTableRow[] = [];
@@ -162,8 +180,7 @@ export async function loadClimateTimeSeries(): Promise<ClimateSnapshot[]> {
   if (climateTimeSeriesPromise) return climateTimeSeriesPromise;
 
   climateTimeSeriesPromise = (async () => {
-    const response = await fetch(climateDataUrl('mumbai_climate_daily_avg.csv'));
-    const text = await response.text();
+    const text = await fetchCSVText('mumbai_climate_daily_avg.csv');
     const rows = parseCSV(text);
     
     const result: ClimateSnapshot[] = [];

@@ -92,21 +92,21 @@ export default function ReportsPage() {
   }, [activeCity, timeIndex, riskDataLoaded, initRiskData, updateRiskProfiles, updateSeverities]);
 
   const td = currentTimeData() || timeSeriesData[0];
-  const cityWards = useMemo(() => getWardsForCity(activeCity), [activeCity]);
-  const cityLabel = activeCity === 'navi_mumbai' ? 'Navi Mumbai' : activeCity.charAt(0).toUpperCase() + activeCity.slice(1);
+  const cityWards = useMemo(() => getWardsForCity('mumbai'), []);
+  const cityLabel = 'Mumbai';
 
-  // Derive risk profiles strictly for the current city
+  // Derive risk profiles strictly for Mumbai
   const profiles = useMemo(() => {
     return cityWards.map(w => {
       const existing = wardRiskProfiles[w.id];
-      if (existing && existing.city === activeCity) {
+      if (existing) {
         return existing;
       }
       const sev = (wardSeverities[w.id] ?? (w.severity as 0 | 1 | 2 | 3));
       return {
         wardId: w.id,
         wardName: w.name,
-        city: activeCity,
+        city: 'mumbai' as const,
         overallSeverity: sev,
         primaryHazard: w.wardType === 'coastal' ? 'tidal_backflow' : w.wardType === 'lowland' ? 'topographic_pooling' : 'rainfall_overflow',
         activeHazards: [],
@@ -120,17 +120,13 @@ export default function ReportsPage() {
         similarHistoricalEvent: null,
       };
     });
-  }, [cityWards, wardRiskProfiles, wardSeverities, activeCity]);
+  }, [cityWards, wardRiskProfiles, wardSeverities]);
 
   const criticalCount = profiles.filter(p => p.overallSeverity >= 3).length;
   const elevatedCount = profiles.filter(p => p.overallSeverity >= 2).length;
 
-  // City-calibrated climate parameters
-  const cityRainMultiplier = activeCity === 'pune' ? 0.62 : activeCity === 'navi_mumbai' ? 1.04 : 1.0;
-  const citySoilMultiplier = activeCity === 'pune' ? 0.82 : activeCity === 'navi_mumbai' ? 1.12 : 1.0;
-
-  const activeRainfall = Math.round(td.rainfall_3day_sum * cityRainMultiplier);
-  const activeSoilPercent = Math.min(96, Math.round(td.soil_moisture * citySoilMultiplier * 100));
+  const activeRainfall = Math.round(td.rainfall_3day_sum);
+  const activeSoilPercent = Math.min(96, Math.round(td.soil_moisture * 100));
 
   const generateReport = useCallback(async (type: ReportType) => {
     if (profiles.length === 0) {
@@ -216,21 +212,10 @@ export default function ReportsPage() {
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
-            {/* 3-City Switcher Bar */}
-            <div className="flex items-center gap-1 p-1 rounded-xl bg-[#13161D] border border-white/10 shadow-sm">
-              {(['mumbai', 'pune', 'navi_mumbai'] as const).map(city => (
-                <button
-                  key={city}
-                  onClick={() => switchCity(city)}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-                    activeCity === city
-                      ? 'bg-white/15 text-white font-semibold shadow-inner'
-                      : 'text-[#8B919E] hover:text-white'
-                  }`}
-                >
-                  {city === 'navi_mumbai' ? 'Navi Mumbai' : city.charAt(0).toUpperCase() + city.slice(1)}
-                </button>
-              ))}
+            {/* Municipal Sector Badge */}
+            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-black/80 border border-white/10 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+              <span className="text-[11px] text-white font-mono font-semibold">BMC Sector: Mumbai (24 Wards)</span>
             </div>
 
             <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-black/80 border border-white/10 shadow-sm">

@@ -27,3 +27,18 @@ output "dynamodb_tables" {
     alerts          = aws_dynamodb_table.alerts.name
   }
 }
+
+output "eventbridge_schedule" {
+  description = "Autonomous EventBridge Rule Name for 15-minute risk recalculations"
+  value       = aws_cloudwatch_event_rule.risk_recalc_schedule.name
+}
+
+output "sqs_citizen_reports_queue_url" {
+  description = "Amazon SQS Queue URL for Resilient Citizen Report Ingestion"
+  value       = aws_sqs_queue.citizen_reports_queue.url
+}
+
+output "step_functions_state_machine_arn" {
+  description = "AWS Step Functions Crisis Incident Triage State Machine ARN"
+  value       = aws_sfn_state_machine.incident_triage.arn
+}

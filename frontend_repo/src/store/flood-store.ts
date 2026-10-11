@@ -1,15 +1,11 @@
 import { create } from 'zustand';
 import { mumbaiWards, timeSeriesData, type Ward, type TimeSeriesPoint } from '@/lib/mumbai-data';
-import { puneWards } from '@/lib/pune-data';
-import { naviMumbaiWards } from '@/lib/navi-mumbai-data';
 import { wardProfileKey, type WardRiskProfile, type ClimateSnapshot, type WardZonalStats, type TrainingTableRow } from '@/lib/risk/WardRiskProfile';
 import { computeRiskProfile } from '@/lib/risk/computeRiskProfile';
 import { loadWardZonalStats, loadTrainingTable, loadClimateTimeSeries, buildClimateIndex } from '@/lib/risk/dataLoader';
 import { getTimeSeriesForPeriod } from '@/lib/climate-service';
 
-export function getWardsForCity(city: 'mumbai' | 'pune' | 'navi_mumbai'): Ward[] {
-  if (city === 'pune') return puneWards;
-  if (city === 'navi_mumbai') return naviMumbaiWards;
+export function getWardsForCity(_city?: string): Ward[] {
   return mumbaiWards;
 }
 
@@ -273,18 +269,11 @@ export const useFloodStore = create<FloodState>((set, get) => ({
   },
 
   updateRiskProfiles: () => {
-    const { zonalStatsMap, trainingTable, timeIndex, activeCity, activeTimeSeries } = get();
+    const { zonalStatsMap, trainingTable, timeIndex, activeTimeSeries, activeCity } = get();
 
     const td = activeTimeSeries[timeIndex] || activeTimeSeries[0] || timeSeriesData[0];
-    // City-calibrated precipitation and soil moisture:
-    // Pune: Deccan rain shadow plateau (~0.62x coastal deluge)
-    // Navi Mumbai: Konkan creek & wetland micro-climate (~1.04x)
-    // Mumbai: coastal island baseline (1.0x)
-    const cityRainMultiplier = activeCity === 'pune' ? 0.62 : activeCity === 'navi_mumbai' ? 1.04 : 1.0;
-    const citySoilMultiplier = activeCity === 'pune' ? 0.82 : activeCity === 'navi_mumbai' ? 1.12 : 1.0;
-
-    const rain3Day = Math.round(td.rainfall_3day_sum * cityRainMultiplier);
-    const soilMoisture = Math.min(0.95, Math.round(td.soil_moisture * citySoilMultiplier * 100) / 100);
+    const rain3Day = Math.round(td.rainfall_3day_sum);
+    const soilMoisture = Math.min(0.95, Math.round(td.soil_moisture * 100) / 100);
 
     const prevTd = timeIndex > 0 ? activeTimeSeries[timeIndex - 1] : null;
     const nextTd = timeIndex < activeTimeSeries.length - 1 ? activeTimeSeries[timeIndex + 1] : null;
@@ -296,10 +285,10 @@ export const useFloodStore = create<FloodState>((set, get) => ({
       landSurfaceTemp: td.land_surface_temp,
       rain2DaySum: rain3Day * 0.67,
       rain3DaySum: rain3Day,
-      rainPrevDay: prevTd ? (prevTd.rainfall_3day_sum * cityRainMultiplier) / 3 : 0,
-      rainNextDay: nextTd ? (nextTd.rainfall_3day_sum * cityRainMultiplier) / 3 : 0,
-      tideLevel: activeCity === 'pune' ? null : rain3Day > 115 ? 4.2 : 2.8,
-      riverLevel: activeCity === 'pune' ? (rain3Day > 85 ? 3.8 : 1.5) : null,
+      rainPrevDay: prevTd ? prevTd.rainfall_3day_sum / 3 : 0,
+      rainNextDay: nextTd ? nextTd.rainfall_3day_sum / 3 : 0,
+      tideLevel: rain3Day > 115 ? 4.2 : 2.8,
+      riverLevel: null,
     };
 
     const profiles: Record<string, WardRiskProfile> = {};
@@ -406,8 +395,8 @@ export const useFloodStore = create<FloodState>((set, get) => ({
     return getWardsForCity(get().activeCity);
   },
 
-  // Ward boundary layer visibility — all cities visible by default
-  wardLayerVisibility: { mumbai: true, pune: true, navi_mumbai: true },
+  // Ward boundary layer visibility (Mumbai only)
+  wardLayerVisibility: { mumbai: true, pune: false, navi_mumbai: false },
   toggleWardLayerVisibility: (city) =>
     set((s) => ({
       wardLayerVisibility: {

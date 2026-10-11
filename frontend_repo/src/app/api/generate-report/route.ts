@@ -230,7 +230,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Invalid report type' }, { status: 400 });
     }
 
-    const modelsToTry = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'allam-2-7b'];
+    const modelsToTry = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
     let report = '';
     let lastErr: any = null;
 

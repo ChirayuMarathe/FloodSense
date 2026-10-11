@@ -12,12 +12,20 @@ import {
   Color,
   SunLight,
   CustomShader,
+  UniformType,
+  VaryingType,
   LightingModel,
+  Cesium3DTileset,
+  Terrain,
   ScreenSpaceEventHandler,
   ScreenSpaceEventType,
   defined,
   Entity,
   ColorMaterialProperty,
+  GeoJsonDataSource,
+  ArcType,
+  HeightReference,
+  ConstantProperty,
 } from 'cesium';
 import { useFloodStore } from '@/store/flood-store';
 import { WardLayer } from '@/lib/gis/WardLayer';
@@ -28,12 +36,74 @@ import { Box, RefreshCw } from 'lucide-react';
 const CESIUM_TOKEN = process.env.NEXT_PUBLIC_CESIUM_TOKEN || '';
 
 import WardTagLayer from './WardTagLayer';
+import FloodDepthLegend from './FloodDepthLegend';
+import { loadPhotorealTileset, loadOsmBuildingsTileset } from '@/lib/gis/BuildingTileset';
+
+function getBuildingColor(heightM: number, buildingType: string): Color {
+  const type = (buildingType || 'yes').toLowerCase();
+  
+  let hex = '#334155'; // default slate
+  if (type === 'apartments' || type === 'residential') {
+    hex = heightM > 25 ? '#3B4252' : '#475569';
+  } else if (type === 'commercial' || type === 'office') {
+    hex = heightM > 30 ? '#1E293B' : '#334155';
+  } else if (type === 'hotel') {
+    hex = '#374151';
+  } else if (type === 'university' || type === 'college' || type === 'school') {
+    hex = '#4B5563';
+  }
+
+  let color = Color.fromCssColorString(hex).withAlpha(0.96);
+  if (heightM > 25) {
+    const glassTint = Color.fromCssColorString('#60A5FA');
+    const t = Math.min(0.35, (heightM - 25) / 50);
+    color = Color.lerp(color, glassTint, t, new Color()).withAlpha(0.96);
+  }
+  return color;
+}
+
+function getFloodColorVec3(depth: number): Cartesian3 {
+  if (depth <= 0.1) return new Cartesian3(0.133, 0.827, 0.933);
+  
+  const CYAN    = [0.133, 0.827, 0.933]; // #22D3EE
+  const BLUE    = [0.086, 0.522, 1.000]; // #1685FF
+  const DEEP    = [0.263, 0.220, 1.000]; // #4338FF
+  const VIOLET  = [0.545, 0.361, 0.965]; // #8B5CF6
+  const MAGENTA = [0.851, 0.275, 0.937]; // #D946EF
+
+  let r = CYAN[0], g = CYAN[1], b = CYAN[2];
+  if (depth <= 0.5) {
+    [r, g, b] = CYAN;
+  } else if (depth <= 1.0) {
+    const t = (depth - 0.5) / 0.5;
+    r = CYAN[0] + (BLUE[0] - CYAN[0]) * t;
+    g = CYAN[1] + (BLUE[1] - CYAN[1]) * t;
+    b = CYAN[2] + (BLUE[2] - CYAN[2]) * t;
+  } else if (depth <= 2.0) {
+    const t = (depth - 1.0) / 1.0;
+    r = BLUE[0] + (DEEP[0] - BLUE[0]) * t;
+    g = BLUE[1] + (DEEP[1] - BLUE[1]) * t;
+    b = BLUE[2] + (DEEP[2] - BLUE[2]) * t;
+  } else if (depth <= 3.0) {
+    const t = (depth - 2.0) / 1.0;
+    r = DEEP[0] + (VIOLET[0] - DEEP[0]) * t;
+    g = DEEP[1] + (VIOLET[1] - DEEP[1]) * t;
+    b = DEEP[2] + (VIOLET[2] - DEEP[2]) * t;
+  } else {
+    const t = Math.min(1.0, (depth - 3.0) / 0.5);
+    r = VIOLET[0] + (MAGENTA[0] - VIOLET[0]) * t;
+    g = VIOLET[1] + (MAGENTA[1] - VIOLET[1]) * t;
+    b = VIOLET[2] + (MAGENTA[2] - VIOLET[2]) * t;
+  }
+  return new Cartesian3(r, g, b);
+}
 
 export default function CesiumMapView() {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Viewer | null>(null);
   const [loadingProgress, setLoadingProgress] = useState<number | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [viewerInstance, setViewerInstance] = useState<Viewer | null>(null);
   const wardLayerRef = useRef<WardLayer | null>(null);
   const handlerRef = useRef<ScreenSpaceEventHandler | null>(null);
   const initRef = useRef(false);
@@ -41,6 +111,7 @@ export default function CesiumMapView() {
   const [hoverInfo, setHoverInfo] = useState<{ x: number, y: number, name: string, city: string } | null>(null);
   const [wardAnchors, setWardAnchors] = useState<{ wardId: string; position: Cesium.Cartesian3 }[]>([]);
   const [isTilt3D, setIsTilt3D] = useState(true);
+  const buildingTilesetRef = useRef<Cesium3DTileset | null>(null);
 
   const activeCity = useFloodStore((s) => s.activeCity);
   const selectedWardId = useFloodStore((s) => s.selectedWardId);
@@ -48,32 +119,72 @@ export default function CesiumMapView() {
   const wardRiskProfiles = useFloodStore((s) => s.wardRiskProfiles);
   const ragPanelOpen = useFloodStore((s) => s.ragPanelOpen);
 
-  // Handle city switching — fly camera to new city and ensure ONLY active city's wards are visible
+  // Sync Mumbai wards on map ready
   useEffect(() => {
     const viewer = viewerRef.current;
     const wardLayer = wardLayerRef.current;
-    if (!viewer || !wardLayer || !activeCity || !mapReady) return;
+    if (!viewer || !wardLayer || !mapReady) return;
 
-    wardLayer.loadCity(activeCity as any).then(() => {
-      // Only make the active city visible, hide all other cities to eliminate extra load
-      for (const c of ['mumbai', 'pune', 'navi_mumbai'] as const) {
-        wardLayer.setCityVisible(c, c === activeCity);
-      }
-      setWardAnchors(wardLayer.getWardAnchors(activeCity as any));
-      wardLayer.updateFromProfiles(useFloodStore.getState().wardRiskProfiles);
-      flyToCity(viewer, activeCity);
-    }).catch(err => {
-      console.warn(`[CesiumMapView] Failed to switch to city ${activeCity}:`, err);
-    });
-  }, [activeCity, mapReady]);
+    wardLayer.setCityVisible('mumbai', true);
+    setWardAnchors(wardLayer.getWardAnchors('mumbai'));
+    wardLayer.updateFromProfiles(useFloodStore.getState().wardRiskProfiles);
+  }, [mapReady]);
 
-  // 3D Buildings bypassed to ensure 60fps ultra-smooth performance and prevent GPU memory spikes
+  // Load Realistic 3D Buildings: Google Photorealistic 3D Tiles with OSM 3D Buildings fallback
   useEffect(() => {
     const viewer = viewerRef.current;
-    if (!viewer || !mapReady) return;
+    if (!viewer || !mapReady || (viewer as any).isDestroyed?.() || !viewer.scene?.globe) return;
     viewer.scene.globe.show = true;
     setLoadingProgress(null);
+
+    let cancelled = false;
+
+    // Load Photoreal 3D Tiles first for realistic facades and textures
+    loadPhotorealTileset(viewer)
+      .then((ts) => {
+        if (cancelled) {
+          if (ts && !ts.isDestroyed()) ts.destroy();
+          return;
+        }
+        if (ts) {
+          ts.show = isTilt3D;
+          buildingTilesetRef.current = ts;
+          viewer.scene.requestRender();
+          return;
+        }
+        throw new Error('Photoreal tileset returned null');
+      })
+      .catch((err) => {
+        console.warn('[CesiumMapView] Photoreal 3D Tiles unavailable, falling back to 3D Buildings:', err);
+        if (cancelled) return;
+        loadOsmBuildingsTileset(viewer, { maximumScreenSpaceError: 16 }).then((ts) => {
+          if (cancelled || !ts) return;
+          ts.show = isTilt3D;
+          buildingTilesetRef.current = ts;
+          viewer.scene.requestRender();
+        }).catch((fallbackErr) => {
+          console.warn('[CesiumMapView] OSM 3D Buildings fallback failed:', fallbackErr);
+        });
+      });
+
+    return () => {
+      cancelled = true;
+      if (buildingTilesetRef.current && viewer && !viewer.isDestroyed()) {
+        try {
+          viewer.scene.primitives.remove(buildingTilesetRef.current);
+        } catch (e) {}
+        buildingTilesetRef.current = null;
+      }
+    };
   }, [mapReady]);
+
+  // Toggle buildings visibility on 3D vs 2D switch
+  useEffect(() => {
+    if (buildingTilesetRef.current) {
+      buildingTilesetRef.current.show = isTilt3D;
+      viewerRef.current?.scene.requestRender();
+    }
+  }, [isTilt3D]);
 
   // React to ward selection (pinned wards, ward clicks in sidebar)
   const getSelectedWard = useFloodStore((s) => s.selectedWard);
@@ -90,24 +201,22 @@ export default function CesiumMapView() {
     }
   }, [selectedWardId, getSelectedWard]);
 
-  // React to ward layer visibility changes — useEffect subscription to avoid re-rendering canvas
+  // React to ward layer visibility changes
   const wardLayerVisibility = useFloodStore((s) => s.wardLayerVisibility);
   useEffect(() => {
     const wardLayer = wardLayerRef.current;
     if (!wardLayer) return;
 
     wardLayer.setCityVisible('mumbai', wardLayerVisibility.mumbai);
-    wardLayer.setCityVisible('pune', wardLayerVisibility.pune);
-    wardLayer.setCityVisible('navi_mumbai', wardLayerVisibility.navi_mumbai);
   }, [wardLayerVisibility]);
 
-  // React to risk profile changes and update map pins
+  // React to risk profile changes and update ward flood layer
   useEffect(() => {
     const wardLayer = wardLayerRef.current;
-    if (!wardLayer) return;
-    
-    wardLayer.updateFromProfiles(wardRiskProfiles);
-  }, [wardRiskProfiles, mapReady]); // Depend on mapReady to ensure initial severities are painted when ward layers finish loading
+    if (wardLayer) {
+      wardLayer.updateFromProfiles(wardRiskProfiles);
+    }
+  }, [wardRiskProfiles, mapReady]);
 
   // React to fill mode changes
   const wardFillMode = useFloodStore((s) => s.wardFillMode);
@@ -163,6 +272,7 @@ export default function CesiumMapView() {
     });
 
     viewerRef.current = viewer;
+    setViewerInstance(viewer);
     initCameraControls(viewer);
 
     if (viewer.scene.moon) {
@@ -180,11 +290,11 @@ export default function CesiumMapView() {
       (window as any).cesiumViewer = viewer;
     }
 
-    // Restore base globe
+    // Restore clean base globe without terrain clipping
     viewer.scene.globe.show = true;
     viewer.scene.globe.depthTestAgainstTerrain = false;
 
-    // High-performance scene settings (disabled heavy shadow maps for smooth 60 FPS)
+    // High-performance scene settings
     viewer.shadows = false;
     viewer.terrainShadows = Cesium.ShadowMode.DISABLED;
     viewer.resolutionScale = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 1.25) : 1.0;
@@ -270,15 +380,13 @@ export default function CesiumMapView() {
         
         const info = wardLayer.getWardInfo(pickedEntity);
         if (info) {
-          const cityLabel = info.city === 'navi_mumbai' ? 'Navi Mumbai' : 
-                           info.city.charAt(0).toUpperCase() + info.city.slice(1);
           setHoverInfo({
             x: movement.endPosition.x,
             y: movement.endPosition.y,
             name: info.wardCode !== info.wardName 
               ? `${info.wardCode} — ${info.wardName}` 
               : info.wardName,
-            city: cityLabel,
+            city: 'Mumbai',
           });
         }
       }
@@ -313,11 +421,18 @@ export default function CesiumMapView() {
 
     return () => {
       cancelled = true;
+      setMapReady(false);
+      setViewerInstance(null);
       handlerRef.current?.removeInputAction(ScreenSpaceEventType.MOUSE_MOVE);
       handlerRef.current?.removeInputAction(ScreenSpaceEventType.LEFT_CLICK);
       handlerRef.current?.destroy();
+      handlerRef.current = null;
       wardLayerRef.current?.destroy();
-      viewer.destroy();
+      wardLayerRef.current = null;
+      if (!viewer.isDestroyed()) {
+        viewer.destroy();
+      }
+      viewerRef.current = null;
       initRef.current = false;
     };
   }, []);
@@ -410,7 +525,8 @@ export default function CesiumMapView() {
         </div>
       )}
 
-      {mapReady && <WardTagLayer viewer={viewerRef.current} anchors={wardAnchors} />}
+      {mapReady && viewerInstance && <WardTagLayer viewer={viewerInstance} anchors={wardAnchors} />}
+      {mapReady && <FloodDepthLegend />}
 
       {/* Tooltip for Hover */}
       {hoverInfo && (

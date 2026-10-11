@@ -58,14 +58,9 @@ export default function WardTagLayer({ viewer, anchors }: Props) {
     return matching
       .slice(0, MAX_VISIBLE_TAGS)
       .map((t) => {
-        const sev = t.profile.overallSeverity;
+        const depth = t.profile.estimatedFloodDepthM ?? 0;
         const rainBonus = Math.min(t.profile.rainfall3DaySum ?? 0, 300);
-        // Anchor exactly above the 3D extruded prism rooftop
-        const roofElevation =
-          sev === 3 ? 380 + rainBonus * 0.45 + 50 : // ~490m
-          sev === 2 ? 220 + rainBonus * 0.25 + 40 : // ~310m
-          sev === 1 ? 90 + rainBonus * 0.15 + 30 :  // ~140m
-          40;
+        const roofElevation = 50; // Clean hover offset above terrain
 
         Cesium.Ellipsoid.WGS84.geodeticSurfaceNormal(t.position, scratchNormal);
         Cesium.Cartesian3.multiplyByScalar(scratchNormal, roofElevation, scratchOffset);
@@ -180,9 +175,25 @@ export default function WardTagLayer({ viewer, anchors }: Props) {
                     </span>
                     <span className="text-[9px] text-zinc-500 font-mono">mm/3d</span>
                   </div>
-                  <div className="text-[10px] text-zinc-400 font-satoshi truncate text-right">
-                    {HAZARD_LABEL[profile.primaryHazard]}
-                  </div>
+                  {(profile.estimatedFloodDepthM ?? 0) > 0.1 && (
+                    <div className="flex items-baseline gap-1">
+                      <span
+                        className="text-[13px] font-bold font-mono tabular-nums leading-none"
+                        style={{
+                          color: profile.estimatedFloodDepthM > 2.0 ? '#D946EF'
+                            : profile.estimatedFloodDepthM > 1.0 ? '#4338FF'
+                            : profile.estimatedFloodDepthM > 0.5 ? '#1685FF'
+                            : '#22D3EE',
+                        }}
+                      >
+                        {profile.estimatedFloodDepthM.toFixed(1)}
+                      </span>
+                      <span className="text-[9px] text-zinc-500 font-mono">m depth</span>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-1 text-[10px] text-zinc-400 font-satoshi truncate">
+                  {HAZARD_LABEL[profile.primaryHazard]}
                 </div>
 
                 {urgent && (

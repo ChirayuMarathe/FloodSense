@@ -20,7 +20,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [updateSeverities, initRiskData, riskDataLoaded]);
 
   return (
-    <div className="w-screen h-screen bg-black text-white font-satoshi flex overflow-hidden relative">
+    <div className="w-full h-screen bg-black text-white font-satoshi flex overflow-hidden relative">
       {/* Background Wave Canvas Animation */}
       <WaveCanvas />
 
