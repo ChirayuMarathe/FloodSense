@@ -44,6 +44,12 @@ resource "aws_apigatewayv2_integration" "risk_engine" {
   payload_format_version = "1.0"
 }
 
+resource "aws_apigatewayv2_route" "root" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "GET /"
+  target    = "integrations/${aws_apigatewayv2_integration.risk_engine.id}"
+}
+
 resource "aws_apigatewayv2_route" "dashboard" {
   api_id    = aws_apigatewayv2_api.http_api.id
   route_key = "GET /api/dashboard"

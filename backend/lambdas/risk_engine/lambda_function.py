@@ -178,6 +178,27 @@ def lambda_handler(event, context):
     if method == 'OPTIONS':
         return {"statusCode": 200, "headers": headers, "body": json.dumps({})}
 
+    # Root health & API discovery endpoint
+    if path in ('/', '', None):
+        return {
+            "statusCode": 200,
+            "headers": headers,
+            "body": json.dumps({
+                "service": "FloodSense Serverless Disaster Response API",
+                "status": "ONLINE",
+                "region": "ap-south-1 (Mumbai)",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "endpoints": [
+                    "/api/dashboard",
+                    "/api/zones",
+                    "/api/alerts",
+                    "/api/incidents",
+                    "/api/reports"
+                ],
+                "frontend": "http://localhost:3000/dashboard"
+            })
+        }
+
     # GET /api/dashboard
     if path == '/api/dashboard':
         zones_resp = zones_table.scan()
